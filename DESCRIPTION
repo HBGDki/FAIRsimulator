@@ -1,0 +1,18 @@
+Package: FAIRsimulator
+Type: Package
+Title: Simulation Platform for the FAIR Trial
+Version: 0.1.1
+Author: Niclas Jonsson and Joakim Nyberg
+Maintainer: Niclas Jonsson <niclas.jonsson@pharmetheus.com>
+Description: The package provides functions to manage simulations to investigate
+    various design choices for the FAIR trial.
+License: May not be distributed outside the Bill & Melissa Gates Foundation
+    project HBGDki.
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 5.0.1
+Depends:
+  dplyr (>= 0.5.0)
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr
