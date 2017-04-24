@@ -166,7 +166,7 @@ getSubjectItems <- function(subjectObj,
 #' @export
 #'
 #' @examples
-#' \donrun{
+#' \dontrun{
 #' tmp <- getItemsFromSubjects(StudyObj[["CohortList"]][[1]])
 #' }
 getItemsFromSubjects <- function(cohortObj,...) {
@@ -219,6 +219,12 @@ getAllSubjectData <- function(StudyObj,...) {
     }
   }
   
+  ## Rename some columns to be easier to understand and create factors
+  resDf <- resDf %>% rename(Age=SampleAge,CohortID=StartNum,HAZ=Data) %>% 
+    mutate(Cycle  = factor(CycleNum,levels=sort(unique(CycleNum)),labels=paste("Cycle",sort(unique(CycleNum)))),
+           Cohort = factor(CohortID,levels=sort(unique(CohortID)),labels=paste("Cohort",sort(unique(CohortID))))
+           )
+  
   return(resDf)
 }
 
@@ -264,7 +270,7 @@ getCohortDetails <- function(StudyObj) {
     NSubjects = myCohorts %map% "NumberOfRecruitedSubjects",
     MaxSubjects =  myCohorts %map% "MaxNumberOfSubjects",
     CohortStartTime = myCohorts %map% "CohortStartTime",
-    StartNum =  myCohorts %map% "StartNum",
+    CohortID =  myCohorts %map% "StartNum",
     CycleNum =  myCohorts %map% "CycleNum",
     RandomizationAge = (myCohorts %map% "RandomizationAgeRange")[1,],
     EndRandomizationAge = (myCohorts %map% "RandomizationAgeRange")[2,]
@@ -273,3 +279,29 @@ getCohortDetails <- function(StudyObj) {
   row.names(df) <- NULL
   return(df)
 }
+
+#' plotHAZ
+#' 
+#' @description Plots the simulated data in a FAIRsimulator \code{study} object.
+#' @param StudyObj A FAIRsimulator \code{study} object. 
+#' @return A \code{ggplot} object
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' plotHAZ(StudyObj)
+#' }
+plotHAZ <- function(StudyObj) {
+  allData <- getAllSubjectData(StudyObj,scalarItems="AgeAtRand",covariates=NULL) 
+  
+  p1 <- ggplot(allData,aes(Age/30,HAZ,group=StudyID,color=Cycle)) +
+    geom_point() +
+    geom_line() +
+    labs(color=NULL) + 
+    theme(legend.position="top") +
+    xlab("Age (months)") +
+    facet_wrap(~Cohort)
+  
+  return(p1)
+}
+
