@@ -2,12 +2,14 @@ Package: FAIRsimulator
 Type: Package
 Title: Simulation Platform for the FAIR Trial
 Version: 0.1.1
-Author: Niclas Jonsson and Joakim Nyberg
+Authors@R: c(
+    person("Niclas", "Jonsson", email = "niclas.jonsson@pharmetheus.com", role = c("aut", "cre")),
+    person("Joakim", "Nyberg", email = "joakim.nyberg@pharmetheus.com", role = c("aut"))
+  )
 Maintainer: Niclas Jonsson <niclas.jonsson@pharmetheus.com>
 Description: The package provides functions to manage simulations to investigate
     various design choices for the FAIR trial.
-License: May not be distributed outside the Bill & Melissa Gates Foundation
-    project HBGDki.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 5.0.1
