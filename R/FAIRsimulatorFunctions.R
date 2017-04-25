@@ -109,7 +109,7 @@ sapply(x, `[[`, n)
 #' #' }
 getSubjectItems <- function(subjectObj,
                             scalarItems=c("StudyID","AgeAtRand","DateAtRand","RandStudyTime","RandCohortTime","CurrentAge",
-                                          "CurrentCohortTime","TreatmentIndex","Treatment","TreatmentEff","RandNum"),
+                                          "CurrentCohortTime","TreatmentIndex","Treatment","TreatmentEff","RandNum","DropoutStudyTime","DropoutCohortTime"),
                             covariates = "Covariates",
                             longitudinalItems = c("SampleAge","CohortSampleTime","StudySampleTime","Data")) {
   

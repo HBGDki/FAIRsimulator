@@ -6,9 +6,10 @@
 \usage{
 getSubjectItems(subjectObj, scalarItems = c("StudyID", "AgeAtRand",
   "DateAtRand", "RandStudyTime", "RandCohortTime", "CurrentAge",
-  "CurrentCohortTime", "TreatmentIndex", "Treatment", "TreatmentEff",
-  "RandNum"), covariates = "Covariates", longitudinalItems = c("SampleAge",
-  "CohortSampleTime", "StudySampleTime", "Data"))
+  "CurrentCohortTime", "TreatmentIndex", "Treatment", "TreatmentEff", "RandNum",
+  "DropoutStudyTime", "DropoutCohortTime"), covariates = "Covariates",
+  longitudinalItems = c("SampleAge", "CohortSampleTime", "StudySampleTime",
+  "Data"))
 }
 \arguments{
 \item{subjectObj}{A FAIRsimulator individual object}
