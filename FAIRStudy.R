@@ -58,11 +58,15 @@ InterimAnalyzesTime<-function(Cohort,StudyObj) {
     return(as.numeric(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime)))},max(Cohort$SamplingDesign))))/Cohort$MaxNumberOfSubjects
   #print(paste0("Percent completed in Cohort ",Cohort$Name,": ",round(tmp*100,1)))
   if (length(tmp)==0) tmp<-0
-  if (tmp>3/5 || (Cohort$CurrentTime+round(Cohort$RandomizationAgeRange[1]))==20*30) {
-   # DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
-    TimeToPerformInterim<-TRUE
-  }
   
+  # if (tmp>3/5 || (Cohort$CurrentTime+round(Cohort$RandomizationAgeRange[1]))==20*30) {
+  #  # DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
+  #   TimeToPerformInterim<-TRUE
+  # }
+   if (Cohort$CurrentTime==(6*30+1)) {
+     DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
+     TimeToPerformInterim<-TRUE
+   }
   #   
   #   Completed<-TRUE
   # }
@@ -124,9 +128,8 @@ GetCohortData<-function(Cohort,StudyObj) {
 
 ### Update probabilities based on data analysis and probability of best
 UpdateProbabilities<-function(Cohort,StudyObj) {
-  iNumPosteriorSamples<-10000
   if (!is.null(Cohort$ChildCohort)) { #Assuming that a subject has been transfered to a new cohort already
-    DebugPrint(paste0("Doing an interim analysis to update probabilitites in cohort ",StudyObj$CohortList[[Cohort$ChildCohort]]$Name," based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    DebugPrint(paste0("Doing an analysis to update probabilitites in cohort ",StudyObj$CohortList[[Cohort$ChildCohort]]$Name," based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     df<-GetCohortData(Cohort,StudyObj) #Get Cohorts data up to this point in time
     df[df==-99]<-NA #Set -99 to missing
     df<-ImputeCovariates(df,StudyObj) #Impute missgin covariates
@@ -150,10 +153,23 @@ UpdateProbabilities<-function(Cohort,StudyObj) {
     #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     #DebugPrint(lmecoef,1,StudyObj)
     
-    probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+    probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
     print(probs)
     
+    #Update probabilitites to keep pre-defined portions 
+    probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
+    probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
+    probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
+    probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
+    DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    print(probs)
+    RandProbs<-list() #Save previous randomization probabilities on cohort
+    RandProbs$CohortTime<-StudyObj$CohortList[[Cohort$ChildCohort]]$CurrentTime #The time until the probability was valid
+    RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[Cohort$ChildCohort]]$RandomizationProbabilities
+    StudyObj$CohortList[[Cohort$ChildCohort]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[Cohort$ChildCohort]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+    StudyObj$CohortList[[Cohort$ChildCohort]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
   }
+  return(StudyObj)
 }
 
 AnalyzeDataEvent<-function(StudyObj) { #An event to check if the cohort is completed and also set that subjects are completed according to the criteria set
@@ -166,10 +182,9 @@ AnalyzeDataEvent<-function(StudyObj) { #An event to check if the cohort is compl
         cohortInterimAnalysis<-InterimAnalyzesTime(Cohort,StudyObj)
         cohortInterimAnalysis<-FALSE
         if (cohortCompleted || cohortInterimAnalysis) { #If we should update probabilities of child cohorts
-          #browser()
-          UpdateProbabilities(StudyObj$CohortList[[i]],StudyObj)
+          StudyObj<-UpdateProbabilities(Cohort,StudyObj)
         }
-        if (cohortCompleted) { #If this is a completed cohort or time to do an interim analyses
+        if (cohortCompleted) { #If this is a completed cohort
           StudyObj$CohortList[[i]]$Active<-FALSE
         }
       }
@@ -360,12 +375,22 @@ RecruitmentEvent<-function(StudyObj) { #Event that recruites subjects to cohort
   return(StudyObj)  
 }
 
+AddEffect<-function(y,StudyObj,Subject,time,effecttime=6*30,cumeffect=NULL) {
+  DebugPrint(paste0("Adding HAZ effect for subject ",Subject$StudyID," at sample time = ",time,""),4,StudyObj)
+  cumeff<-0
+  #If we have a cumulative effect from previous treatments, i.e. at time=0
+  if (!is.null(Subject$CumulativeEffect)) cumeff<-Subject$CumulativeEffect
+  if (!is.null(cumeffect)) cumeff<-cumeffect #Use this as previous effect instead
+return(y+Subject$TreatmentEff/effecttime*time + cumeff) #Assume linear effect (and additive)
+}
+
 SimulateHAZ<-function(StudyObj,Subject,time,age) {
   DebugPrint(paste0("Simulate HAZ for subject ",Subject$StudyID," at study time: ",StudyObj$CurrentTime," (sample time = ",time,")"),4,StudyObj)
   library(MASS)
   res_err<-mvrnorm(n = length(age), 0, StudyObj$sig , tol = 1e-6, empirical = FALSE, EISPACK = FALSE) #Simulate residual error on HAZ
   y = StudyObj$calcHAZVector(age = age/(30*12),basethetas = StudyObj$thbasevector,covthetas = Subject$FREMCoeff,etas = Subject$IndSamples) #Calculate Y without residual error
   yres<-y+res_err #Add residual error
+  yres<-AddEffect(yres,StudyObj,Subject,time) #Add HAZ Effect
   DebugPrint(paste0("HAZ observation ",yres," simulated for subject with age ",age),4,StudyObj)
   return(yres)
 }
@@ -458,6 +483,10 @@ MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromC
         Subject$RandStudyTime<-StudyObj$CurrentTime #The Randomization/evolved time time (in study time)
         Subject$RandCohortTime<-ToCohort$CurrentTime # The Randomization time/evolved time (in new cohort time)
         
+        #Get cumulative effect (dHAZ) at this time (i.e. time when new cohort starts)
+        Subject$CumulativeEffect<-AddEffect(0,StudyObj,Subject,Subject$SubjectCohortTime)
+        EffectAtAge<-AddEffect(0,StudyObj,Subject,Subject$SubjectCohortTime,cumeffect = 0)
+        
         Subject$Status<-1 #Active
         Subject$CurrentCohortTime<-Subject$RandCohortTime #The current cohort time at a particular study time
         Subject$SubjectCohortTime<-0 #The subject specific cohort time, i.e. how long the subject has been in the cohort (starting at 0)
@@ -475,13 +504,14 @@ MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromC
         Subject$PreviousTreatment[[length(Subject$PreviousTreatment)+1]]<-Subject$Treatment #Previous treatment
         Subject$PreviousTreatmentEff[[length(Subject$PreviousTreatmentEff)+1]]<-Subject$TreatmentEff #Previous treatment effect
         Subject$PreviousTreatmentAge[[length(Subject$PreviousTreatmentAge)+1]]<-Subject$CurrentAge #Previous treatment age
-        Subject$PreviousTreatmentEffectAtAge[[length(Subject$PreviousTreatmentEffectAtAge)+1]]<-Subject$TreatmentEff #Previous treatment effect @ age 
-        
+        Subject$PreviousTreatmentEffectAtAge[[length(Subject$PreviousTreatmentEffectAtAge)+1]]<-EffectAtAge #Previous treatment effect @ age 
+
         Subject$TreatmentIndex<-TreatmentIndex #Save the randomized treatment
         Subject$Treatment<-ToCohort$Treatments[[TreatmentIndex]]
         Subject$TreatmentEff<-ToCohort$EffSizes[[TreatmentIndex]]
         
-        if (StudyObj$StudyDesignSettings$MoveLastSampleToNewCohort) {#If resuse the last sample as baseline sample in new cohort
+        
+        if (StudyObj$StudyDesignSettings$MoveLastSampleToNewCohort) {#If reuse the last sample as baseline sample in new cohort
           Data<-Subject$Data
           SampleAge<-Subject$SampleAge
           SubjectSampleTime<-Subject$SubjectSampleTime
@@ -570,20 +600,12 @@ MoveCompletedSubjects<-function(StudyObj) {
 InitEvent <- function(StudyObj) {
   
   #Read in all the FREM stuff
-  
-  #source('../../GAT-Growth-PMX-1/Supermodel/Analysis/SupportFunctions/getExt.R') # Now  in the FAIRsimulator package
-  
-  ## The .ext, dfFFEMPool-India-run71.csv and dfSubj-India-run71.csv files are now part of the FAIRsimulator package. system.file finds the path to it in a platform independent way.
   runno <-'71' # The updated FREM model
   myExt <- system.file("extdata",paste0("run",runno,".ext"),package="FAIRsimulator")
   dfext <- subset(getExt(extFile = myExt),ITERATION=="-1000000000") #REad in parameter values
   
   StudyObj$dfFFEMPool<-read.csv(file=system.file("extdata","dfFFEMPool-India-run71.csv",package="FAIRsimulator")) #Read in models that we can use
   StudyObj$dfSubjPool<-read.csv(file=system.file("extdata","dfSubj-India-run71.csv",package="FAIRsimulator")) #Read in covariates that we can use
-  
-  #dfext    <- subset(getExt(extFile = paste0("../../GAT-Growth-PMX-1/Supermodel-v1.0/Analysis/Model/FAIR/run",runno,".ext")),ITERATION=="-1000000000") #REad in parameter values
-  #StudyObj$dfFFEMPool<-read.csv(file="../FremModel/dfFFEMPool-India-run71.csv") #Read in models that we can use
-  #StudyObj$dfSubjPool<-read.csv(file="../FremModel/dfSubj-India-run71.csv") #Read in covariates that we can use
   
   StudyObj$calcHAZVector<-calcHAZVector #The function for simulating HAZ observations
   
@@ -610,9 +632,10 @@ StudyDesignSettings$RandomizationProbabilities<-list(c(0.25,0.25,0.25,0.25), #Ra
 StudyDesignSettings$MinAllocationProbabilities<-list(c(0.25,0,0,0), #Minimum allocation probabilities for each treatment
                                                      c(0.25,0,0,0),
                                                      c(0.25,0,0,0))
+StudyDesignSettings$iNumPosteriorSamples<-10000 #The number of samples to calculate prob of beeing best
 
 StudyDesignSettings$Treatments<-list(1:4,c(1,5,6,7),c(1,8,9,10)) #Treatment codes
-StudyDesignSettings$EffSizes<-list(c(0,0.05,0.1,0.25),c(0,0.05,0.25,0),c(0,0.3,0.02,0.08)) #EffectSizes for HAZ at 6 month of each treatment
+StudyDesignSettings$EffSizes<-list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)) #EffectSizes for HAZ at 6 month of each treatment
 StudyDesignSettings$CohortAgeRange<-list(c(0,1)*30,c(6,7)*30,c(12,13)*30) #The age ranges for each cohort
 
 StudyDesignSettings$SamplingDesigns<-list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6,9,12)*30) #The sampling design for each pre-defined cohort
@@ -649,20 +672,6 @@ EventList[[length(EventList)+1]]<-MoveCompletedSubjects #Move completed subjects
 
 EventList[[length(EventList)+1]]<-AnalyzeDataEvent #Add a Analyze data event
 
-
-####Add effect to HAZ
-
-#### Should we analyze?
-  ### If cohort completed
-    ###Update prob
-  ### If interim analyses
-    ###Update prob
-
-####Create new cohort?
-  ### If all samples
-  ### or if all dropout....
-      
-    
 
 StudyObj$EventList<-EventList
 
