@@ -217,6 +217,7 @@ getAllSubjectData <- function(StudyObj,...) {
     } else {
       resDf <- rbind(resDf,getItemsFromSubjects(cohrt,...))
     }
+    #resDf$CohortStartTime <- cohrt$CohortStartTime
   }
   
   ## Rename some columns to be easier to understand and create factors
