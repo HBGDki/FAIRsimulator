@@ -18,7 +18,7 @@ A data frame
 Extracts data from all subjects in a FAIRsimulator cohort object
 }
 \examples{
-\\donrun{
+\dontrun{
 tmp <- getItemsFromSubjects(StudyObj[["CohortList"]][[1]])
 }
 }
