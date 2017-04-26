@@ -456,9 +456,9 @@ DropoutEvent<-function(StudyObj) { #Event that check if subject have dropped out
   return(StudyObj)
 }
 
-`%listmap%` <- function(x, n) {
-  sapply(x, `[[`, n)
-}
+# `%listmap%` <- function(x, n) {
+#   sapply(x, `[[`, n)
+# }
 
 MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromCohort to ToCohort which are completed (Status==2), Re-randomize treatments based on ToCohort rand probabilities
   DebugPrint(paste0("Check for subjects to move from cohort ",FromCohort$Name," to cohort ",ToCohort$Name," at study time: ",StudyObj$CurrentTime),3,StudyObj)
