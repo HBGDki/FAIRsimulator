@@ -1,3 +1,4 @@
+
 library(FAIRsimulator) ## Access functionality to run the simulations. See help(package="FAIRsimulator").
 
 #source('./AdaptiveStudy.R') # Now part of the FAIRsimulator package
@@ -63,13 +64,10 @@ InterimAnalyzesTime<-function(Cohort,StudyObj) {
   #  # DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
   #   TimeToPerformInterim<-TRUE
   # }
-   if (Cohort$CurrentTime==(6*30+1)) {
-     DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
-     TimeToPerformInterim<-TRUE
-   }
-  #   
-  #   Completed<-TRUE
-  # }
+   # if (Cohort$CurrentTime==(6*30+1)) {
+   #   DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
+   #   TimeToPerformInterim<-TRUE
+   # }
   return(TimeToPerformInterim)
 }
 
@@ -116,7 +114,7 @@ GetCohortData<-function(Cohort,StudyObj) {
       dfr<-data.frame()
       if (!is.null(Subject$Data)) {
         for (i in 1:length(Subject$Data)) {
-          dfr<-rbind(dfr,data.frame(ID=Subject$StudyID,DATA=Subject$Data[[i]],AGE=Subject$SampleAge[[i]],TRT=Subject$Treatment,Subject$Covariates))
+          dfr<-rbind(dfr,data.frame(ID=Subject$StudyID,DATA=Subject$Data[[i]],AGE=Subject$SampleAge[[i]],TRT=Subject$TreatmentIndex,TRTS=Subject$Treatment,Subject$Covariates))
         }
       }
       return(dfr)
@@ -127,9 +125,8 @@ GetCohortData<-function(Cohort,StudyObj) {
 }
 
 ### Update probabilities based on data analysis and probability of best
-UpdateProbabilities<-function(Cohort,StudyObj) {
-  if (!is.null(Cohort$ChildCohort)) { #Assuming that a subject has been transfered to a new cohort already
-    DebugPrint(paste0("Doing an analysis to update probabilitites in cohort ",StudyObj$CohortList[[Cohort$ChildCohort]]$Name," based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
+    DebugPrint(paste0("Doing an analysis based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     df<-GetCohortData(Cohort,StudyObj) #Get Cohorts data up to this point in time
     df[df==-99]<-NA #Set -99 to missing
     df<-ImputeCovariates(df,StudyObj) #Impute missgin covariates
@@ -163,12 +160,22 @@ UpdateProbabilities<-function(Cohort,StudyObj) {
     probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
     DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     print(probs)
-    RandProbs<-list() #Save previous randomization probabilities on cohort
-    RandProbs$CohortTime<-StudyObj$CohortList[[Cohort$ChildCohort]]$CurrentTime #The time until the probability was valid
-    RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[Cohort$ChildCohort]]$RandomizationProbabilities
-    StudyObj$CohortList[[Cohort$ChildCohort]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[Cohort$ChildCohort]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
-    StudyObj$CohortList[[Cohort$ChildCohort]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
-  }
+    
+    Cohort$UpdateProbabilities<-probs #The latest probability updates
+    StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
+    
+    for (j in 1:length(StudyObj$CohortList)) {#Update all dependent cohorts
+      if (!is.null(StudyObj$CohortList[[j]]$ProbabilityCohort) && cohortindex!=j && cohortindex==StudyObj$CohortList[[j]]$ProbabilityCohort) {#If cohort j should be updated based on prob in cohort i
+        DebugPrint(paste0("Updating probabilities in cohort ",StudyObj$CohortList[[j]]$Name," based on analysis in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+        RandProbs<-list() #Save previous randomization probabilities on cohort
+        RandProbs$CohortTime<-StudyObj$CohortList[[j]]$CurrentTime #The time until the probability was valid
+        RandProbs$StudyTime<-StudyObj$CurrentTime
+        RandProbs$FromCohort<-cohortindex
+        RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[j]]$RandomizationProbabilities
+        StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+        StudyObj$CohortList[[j]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
+      }
+    }
   return(StudyObj)
 }
 
@@ -180,9 +187,8 @@ AnalyzeDataEvent<-function(StudyObj) { #An event to check if the cohort is compl
       if (Cohort$Active) { #if this is an active cohort
         cohortCompleted<-CohortCompleted(Cohort,StudyObj)
         cohortInterimAnalysis<-InterimAnalyzesTime(Cohort,StudyObj)
-        cohortInterimAnalysis<-FALSE
         if (cohortCompleted || cohortInterimAnalysis) { #If we should update probabilities of child cohorts
-          StudyObj<-UpdateProbabilities(Cohort,StudyObj)
+          StudyObj<-UpdateProbabilities(Cohort,StudyObj,i)
         }
         if (cohortCompleted) { #If this is a completed cohort
           StudyObj$CohortList[[i]]$Active<-FALSE
@@ -219,6 +225,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) { #Create a new cohort object
     Cohort$MaxNumberOfSubjects<-StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
     Cohort$SamplingDesign<-StudyObj$StudyDesignSettings$SamplingDesigns[[CohortNum]] #The sampling design for this cohort
     Cohort$RandomizationProbabilities<-StudyObj$StudyDesignSettings$RandomizationProbabilities[[CohortNum]] #Get the randomization probabilities
+    Cohort$UpdateProbabilities<-Cohort$RandomizationProbabilities #The Current updated probabilities
     Cohort$MinAllocationProbabilities<-StudyObj$StudyDesignSettings$MinAllocationProbabilities[[CohortNum]] #Get the minimum randomization probabilities
     Cohort$Treatments<-StudyObj$StudyDesignSettings$Treatments[[CohortNum]] #Get the treatments (treatment codes)
     Cohort$EffSizes<-StudyObj$StudyDesignSettings$EffSizes[[CohortNum]] #Get the effect sizes for each treatment
@@ -456,10 +463,6 @@ DropoutEvent<-function(StudyObj) { #Event that check if subject have dropped out
   return(StudyObj)
 }
 
-# `%listmap%` <- function(x, n) {
-#   sapply(x, `[[`, n)
-# }
-
 MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromCohort to ToCohort which are completed (Status==2), Re-randomize treatments based on ToCohort rand probabilities
   DebugPrint(paste0("Check for subjects to move from cohort ",FromCohort$Name," to cohort ",ToCohort$Name," at study time: ",StudyObj$CurrentTime),3,StudyObj)
   fromids<-NULL
@@ -546,6 +549,13 @@ MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromC
   return(ToCohort)
 }          
 
+#Return the cohortlist index of a certain start number
+GetStartNumIndex <- function(StudyObj,StartNum) {
+for (i in 1:length(StudyObj$CohortList)) {
+  if (StartNum==StudyObj$CohortList[[i]]$StartNum) return(i)
+}
+return (NA)
+}
 
 #Event that check if completed subjects should be moved to new Cohort
 #Only subjects that are in a cohort that is linked to another cohort is affected
@@ -561,21 +571,24 @@ MoveCompletedSubjects<-function(StudyObj) {
         if (is.null(Cohort$ChildCohort)) { #If we need to start a new cohort first
           DebugPrint(paste0("A new child cohort is created based on completed subjects from cohort ",Cohort$Name," at study time ",StudyObj$CurrentTime),1,StudyObj)
           NewChildCohort<-NewCohort(StudyObj,CohortNum=NULL)
+          NewCohortLinkIndex<-GetStartNumIndex(StudyObj,Cohort$NewCohortLink)
           NewChildCohort$MaxNumberOfSubjects<-Cohort$MaxNumberOfSubjects #The maximum number of subject in this cohort
-          NewChildCohort$SamplingDesign<-StudyObj$StudyDesignSettings$SamplingDesigns[[Cohort$NewCohortLink]] #The sampling design for this cohort
-          NewChildCohort$RandomizationProbabilities<-StudyObj$StudyDesignSettings$RandomizationProbabilities[[Cohort$NewCohortLink]] #Get the randomization probabilities
-          NewChildCohort$MinAllocationProbabilities<-StudyObj$StudyDesignSettings$MinAllocationProbabilities[[Cohort$NewCohortLink]] #Get the minimum randomization probabilities
-          NewChildCohort$Treatments<-StudyObj$StudyDesignSettings$Treatments[[Cohort$NewCohortLink]] #Get the treatments (treatment codes)
-          NewChildCohort$EffSizes<-StudyObj$StudyDesignSettings$EffSizes[[Cohort$NewCohortLink]] #Get the effect sizes for each treatment
+          NewChildCohort$SamplingDesign<-StudyObj$CohortList[[NewCohortLinkIndex]]$SamplingDesign #The sampling design for this cohort
+          NewChildCohort$RandomizationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$UpdateProbabilities #Get the randomization probabilities
+          NewChildCohort$UpdateProbabilities<-NewChildCohort$RandomizationProbabilities
+          NewChildCohort$MinAllocationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$MinAllocationProbabilities #Get the minimum randomization probabilities
+          NewChildCohort$Treatments<-StudyObj$CohortList[[NewCohortLinkIndex]]$Treatments #Get the treatments (treatment codes)
+          NewChildCohort$EffSizes<-StudyObj$CohortList[[NewCohortLinkIndex]]$EffSizes #Get the effect sizes for each treatment
           NewChildCohort$RandomizationAgeRange<-Cohort$RandomizationAgeRange #The age range at randomization for this cohort
-          NewChildCohort$DropoutRate<-StudyObj$StudyDesignSettings$CohortDropoutRate[Cohort$NewCohortLink] #The dropout rate for this cohort
-          NewChildCohort$NewCohortLink<-StudyDesignSettings$NewCohortLink[[Cohort$NewCohortLink]] #The link to another cohort to get the randomization probabilities
+          NewChildCohort$DropoutRate<-StudyObj$CohortList[[NewCohortLinkIndex]]$DropoutRate #The dropout rate for this cohort
+          NewChildCohort$NewCohortLink<-StudyObj$CohortList[[NewCohortLinkIndex]]$NewCohortLink #The link to another cohort to get the randomization probabilities
 
           NewChildCohort$Name<-paste0("C-",Cohort$StartNum,"-",Cohort$CycleNum+1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
           NewChildCohort$StartNum<-Cohort$StartNum #The Cohort starting number
           NewChildCohort$CycleNum<-Cohort$CycleNum+1 #The Cohort cycle number
           StudyObj$CohortList[[i]]$ChildCohort<-length(StudyObj$CohortList)+length(NewChildCohortList)+1 #Add reference to the new cohort as a child cohort
           NewChildCohort$ParentCohort<-i #Add a reference to old Cohort as a parent cohort
+          NewChildCohort$ProbabilityCohort<-NewCohortLinkIndex #The cohort where to update the probabilities from
           
           NewChildCohort<-MoveSubjects(Cohort,NewChildCohort,StudyObj)          
           
@@ -634,7 +647,7 @@ StudyDesignSettings$MinAllocationProbabilities<-list(c(0.25,0,0,0), #Minimum all
                                                      c(0.25,0,0,0))
 StudyDesignSettings$iNumPosteriorSamples<-10000 #The number of samples to calculate prob of beeing best
 
-StudyDesignSettings$Treatments<-list(1:4,c(1,5,6,7),c(1,8,9,10)) #Treatment codes
+StudyDesignSettings$Treatments<-list(c("SoC-1","TRT-1","TRT-2","TRT-3"),c("SoC-2","TRT-4","TRT-5","TRT-6"),c("SoC-3","TRT-7","TRT-8","TRT-9")) #Treatment codes
 StudyDesignSettings$EffSizes<-list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)) #EffectSizes for HAZ at 6 month of each treatment
 StudyDesignSettings$CohortAgeRange<-list(c(0,1)*30,c(6,7)*30,c(12,13)*30) #The age ranges for each cohort
 
@@ -671,6 +684,8 @@ EventList[[length(EventList)+1]]<-SimulateDataEvent #Add a Simulate data event
 EventList[[length(EventList)+1]]<-MoveCompletedSubjects #Move completed subjects event
 
 EventList[[length(EventList)+1]]<-AnalyzeDataEvent #Add a Analyze data event
+
+#EventList[[length(EventList)+1]]<-UpdateProbsEvent #UpdateAllProbabilities
 
 
 StudyObj$EventList<-EventList
