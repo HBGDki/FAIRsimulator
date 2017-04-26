@@ -2,7 +2,7 @@
 #'
 #' @description Extracts the NONMEM iteration information from a NONMEM .ext file.
 #' @param extFile The name of the .ext file.
-#' @param The $ESTIMATION the iteration information should be extracted from. Will use the last $ESTIMATION if set to \code{NULL}.
+#' @param set The $ESTIMATION the iteration information should be extracted from. Will use the last $ESTIMATION if set to \code{NULL}.
 #'
 #' @return A data.frame.
 #' @export
