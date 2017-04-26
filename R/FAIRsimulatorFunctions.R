@@ -279,6 +279,11 @@ getCohortDetails <- function(StudyObj) {
   )
   
   row.names(df) <- NULL
+  
+  df <- df %>%  mutate(Cycle  = factor(CycleNum,levels=sort(unique(CycleNum)),labels=paste("Cycle",sort(unique(CycleNum)))),
+                       Cohort = factor(CohortID,levels=sort(unique(CohortID)),labels=paste("Cohort",sort(unique(CohortID))))
+  )
+  
   return(df)
 }
 
@@ -307,33 +312,5 @@ plotHAZ <- function(StudyObj) {
   return(p1)
 }
 
-#' plotStudyCohorts
-#'
-#' @description Plots the cohort durations/cycles in a FAIRsimulator \code{study} object.
-#' @param StudyObj A FAIRsimulator \code{study} object.
-#' @param cohortlength The length (in days) of cohorts that are evolving 
-#'
-#' @return A \code{ggplot} object
-#' @export
-#'
-#' @examples
-#' #' \dontrun{
-#' plotStudyCohorts(StudyObj)
-#' }
-plotStudyCohorts <- function(StudyObj,cohortlength=6*30) {
-  
-  if(class(StudyObj) != "study") stop("studyObj needs to be a study object")
-  
-  cohortdetails<-getCohortDetails(StudyObj)
-  
-  cohortdetails$EndRandomizationAge[cohortdetails$CycleNum>1]<-cohortdetails$EndRandomizationAge[cohortdetails$CycleNum>1]+(cohortdetails$CycleNum[cohortdetails$CycleNum>1]-1)*cohortlength
-  cohortdetails$RandomizationAge[cohortdetails$CycleNum>1]<-cohortdetails$RandomizationAge[cohortdetails$CycleNum>1]+(cohortdetails$CycleNum[cohortdetails$CycleNum>1]-1)*cohortlength
-  
-  p<-ggplot(data=cohortdetails)
-  p<-p+geom_rect(aes(xmin=CohortStartTime/30,xmax=(CohortStartTime+CohortDuration)/30,ymin=RandomizationAge/30,ymax=EndRandomizationAge/30,fill=as.factor(CohortID),linetype=as.factor(CohortID)),color="black",alpha=0.7)
-  p<-p+xlab("Study time (month)") + ylab("Age at randomization (months)")
-  p<-p+guides(fill=guide_legend(title="Cohort"),linetype=guide_legend(title="Cohort"))
-  return(p)
-}
 
 
