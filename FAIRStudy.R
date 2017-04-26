@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 library(FAIRsimulator) ## Access functionality to run the simulations. See help(package="FAIRsimulator").
 
 #source('./AdaptiveStudy.R') # Now part of the FAIRsimulator package
