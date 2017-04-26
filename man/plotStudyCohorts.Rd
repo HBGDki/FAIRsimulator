@@ -10,6 +10,8 @@ plotStudyCohorts(StudyObj, cohortlength = 6 * 30, wrapVariable = NULL)
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
 
 \item{cohortlength}{The length (in days) of cohorts that are evolving}
+
+\item{wrapVariable}{The name (as a string) of the variable to create facets with, using \code{facet_wrap}.}
 }
 \value{
 A \code{ggplot} object
