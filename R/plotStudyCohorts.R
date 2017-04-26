@@ -3,6 +3,7 @@
 #' @description Plots the cohort durations/cycles in a FAIRsimulator \code{study} object.
 #' @param StudyObj A FAIRsimulator \code{study} object.
 #' @param cohortlength The length (in days) of cohorts that are evolving 
+#' @param wrapVariable The name (as a string) of the variable to create facets with, using \code{facet_wrap}.
 #'
 #' @return A \code{ggplot} object
 #' @export
