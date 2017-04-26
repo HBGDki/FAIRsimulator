@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 library(FAIRsimulator) ## Access functionality to run the simulations. See help(package="FAIRsimulator").
 
 #source('./AdaptiveStudy.R') # Now part of the FAIRsimulator package
@@ -460,10 +461,6 @@ DropoutEvent<-function(StudyObj) { #Event that check if subject have dropped out
     }
   }
   return(StudyObj)
-}
-
-`%listmap%` <- function(x, n) {
-  sapply(x, `[[`, n)
 }
 
 MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #Move subjects from FromCohort to ToCohort which are completed (Status==2), Re-randomize treatments based on ToCohort rand probabilities
