@@ -722,6 +722,4 @@ class(StudyObj) <- "study"
 
 StudyObj<-AdaptiveStudy(StudyObj)
 
-  print(paste0("The study stopped at time: ",StudyObj$CurrentTime, " i.e. ",StudyObj$CurrentDate))
-
-
+print(paste0("The study stopped at time: ",StudyObj$CurrentTime, " i.e. ",StudyObj$CurrentDate))
