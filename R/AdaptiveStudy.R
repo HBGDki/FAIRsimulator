@@ -13,7 +13,7 @@
 AdaptiveStudy<-function(StudyObj){
   
   StudyObj<-InitEvent(StudyObj) #Initialize the study object
-  
+
   while (StudyObj$StopEvent(StudyObj)==FALSE) { #Start the study
     
     if (!is.null(StudyObj$EventList)) {
