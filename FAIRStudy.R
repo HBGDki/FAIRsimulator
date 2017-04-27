@@ -172,6 +172,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
         RandProbs$StudyTime<-StudyObj$CurrentTime
         RandProbs$FromCohort<-cohortindex
         RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[j]]$RandomizationProbabilities
+        RandProbs$Treatments<-StudyObj$CohortList[[j]]$Treatments
         StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
         StudyObj$CohortList[[j]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
       }
@@ -609,6 +610,28 @@ MoveCompletedSubjects<-function(StudyObj) {
   return(StudyObj)
 }
 
+#Update probabilities of non-connected cohorts
+UpdateProbabilitiesEvent<-function(StudyObj) {
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      Cohorti<-StudyObj$CohortList[[i]]
+      for (j in 1:length(StudyObj$CohortList)) {
+        Cohortj<-StudyObj$CohortList[[j]]
+        if (i!=j && !is.null(Cohorti$ProbabilityCohort) && !is.null(Cohortj$ProbabilityCohort) && Cohorti$ProbabilityCohort==Cohortj$ProbabilityCohort) { #These two cohorts should be updated based on the same probability
+          if (any(Cohorti$RandomizationProbabilities!=Cohortj$RandomizationProbabilities)) {
+            browser()
+            print("Hejsan")
+            print("Svejsan")
+            t<-0
+          }
+        }
+        
+      }  
+    }
+  }
+  return(StudyObj)
+}
+
 
 InitEvent <- function(StudyObj) {
   
@@ -685,7 +708,7 @@ EventList[[length(EventList)+1]]<-MoveCompletedSubjects #Move completed subjects
 
 EventList[[length(EventList)+1]]<-AnalyzeDataEvent #Add a Analyze data event
 
-#EventList[[length(EventList)+1]]<-UpdateProbsEvent #UpdateAllProbabilities
+EventList[[length(EventList)+1]]<-UpdateProbabilitiesEvent #Update all probabilities, even for non directly connected cohorts
 
 
 StudyObj$EventList<-EventList
