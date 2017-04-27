@@ -739,5 +739,5 @@ StudyObj<-AdaptiveStudy(StudyObj)
 
 print(paste0("The study stopped at time: ",StudyObj$CurrentTime, " i.e. ",StudyObj$CurrentDate))
 
-StudyObj$CohortList %listmap% "UpdateProbabilities"
-StudyObj$CohortList %listmap% "UpdateCoefficients"
+#StudyObj$CohortList %listmap% "UpdateProbabilities"
+#StudyObj$CohortList %listmap% "UpdateCoefficients"
