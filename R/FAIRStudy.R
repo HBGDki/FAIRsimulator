@@ -217,7 +217,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   df$SANITATN<-as.factor(df$SANITATN)
   df$AGE<-df$AGE/(12*30) #Rescale time to years
   
-  library(lme4)
+  # library(lme4)
   #### Perform LME estimation based on some covariates and treatment effects for each cohort
   lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
   
@@ -230,7 +230,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
   #DebugPrint(lmecoef,1,StudyObj)
   
-  probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+  probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyObj$StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
   print(probs)
   
   #Update probabilitites to keep pre-defined portions 
@@ -339,20 +339,21 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
   Cohort$CohortStartDate<-StudyObj$CurrentDate #The Cohort start date
   Cohort$CurrentTime<-0 #The Cohort time
   Cohort$RecruitmentRateFunction<-RecruitmentRatefunction # The recruitment rate function
+  Cohort$RecruitmentRateFunction<-StudyObj$Recruitmentfunction # The recruitment rate function
   if (!is.null(CohortNum)) {
-    Cohort$MaxNumberOfSubjects<-StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
-    Cohort$SamplingDesign<-StudyObj$StudyDesignSettings$SamplingDesigns[[CohortNum]] #The sampling design for this cohort
-    Cohort$RandomizationProbabilities<-StudyObj$StudyDesignSettings$RandomizationProbabilities[[CohortNum]] #Get the randomization probabilities
-    Cohort$UpdateProbabilities<-Cohort$RandomizationProbabilities #The Current updated probabilities
-    Cohort$MinAllocationProbabilities<-StudyObj$StudyDesignSettings$MinAllocationProbabilities[[CohortNum]] #Get the minimum randomization probabilities
-    Cohort$Treatments<-StudyObj$StudyDesignSettings$Treatments[[CohortNum]] #Get the treatments (treatment codes)
-    Cohort$EffSizes<-StudyObj$StudyDesignSettings$EffSizes[[CohortNum]] #Get the effect sizes for each treatment
-    Cohort$RandomizationAgeRange<-StudyObj$StudyDesignSettings$CohortAgeRange[[CohortNum]] #The age range at randomization for this cohort
-    Cohort$DropoutRate<-StudyObj$StudyDesignSettings$CohortDropoutRate[CohortNum] #The dropout rate for this cohort
-    Cohort$NewCohortLink<-StudyDesignSettings$NewCohortLink[[CohortNum]] #The link to another cohort to get the randomization probabilities
-    Cohort$Name<-paste0("C-",CohortNum,"-1 [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
-    Cohort$StartNum<-CohortNum #The cohort start number
-    Cohort$CycleNum<-1 #The cycle number
+    Cohort$MaxNumberOfSubjects        <- StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
+    Cohort$SamplingDesign             <- StudyObj$StudyDesignSettings$SamplingDesigns[[CohortNum]] #The sampling design for this cohort
+    Cohort$RandomizationProbabilities <- StudyObj$StudyDesignSettings$RandomizationProbabilities[[CohortNum]] #Get the randomization probabilities
+    Cohort$UpdateProbabilities        <- Cohort$RandomizationProbabilities #The Current updated probabilities
+    Cohort$MinAllocationProbabilities <- StudyObj$StudyDesignSettings$MinAllocationProbabilities[[CohortNum]] #Get the minimum randomization probabilities
+    Cohort$Treatments                 <- StudyObj$StudyDesignSettings$Treatments[[CohortNum]] #Get the treatments (treatment codes)
+    Cohort$EffSizes                   <- StudyObj$StudyDesignSettings$EffSizes[[CohortNum]] #Get the effect sizes for each treatment
+    Cohort$RandomizationAgeRange      <- StudyObj$StudyDesignSettings$CohortAgeRange[[CohortNum]] #The age range at randomization for this cohort
+    Cohort$DropoutRate                <- StudyObj$StudyDesignSettings$CohortDropoutRate[CohortNum] #The dropout rate for this cohort
+    Cohort$NewCohortLink              <- StudyObj$StudyDesignSettings$NewCohortLink[[CohortNum]] #The link to another cohort to get the randomization probabilities
+    Cohort$Name                       <- paste0("C-",CohortNum,"-1 [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
+    Cohort$StartNum                   <- CohortNum #The cohort start number
+    Cohort$CycleNum                   <- 1 #The cycle number
   }
   class(Cohort)<-"cohort"
   return(Cohort)  
