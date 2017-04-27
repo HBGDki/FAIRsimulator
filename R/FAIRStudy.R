@@ -68,7 +68,6 @@ CohortCompleted<-function(Cohort,StudyObj) {
   if (all(lapply(Cohort$SubjectList,function(Subject,LastSample){
     return(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime))
   },max(Cohort$SamplingDesign))==TRUE)) {
-    #browser()
     DebugPrint(paste0("Cohort ",Cohort$Name," is completed at time: ",StudyObj$CurrentTime),1,StudyObj)
     Completed<-TRUE
   }
@@ -206,56 +205,75 @@ GetCohortData<-function(Cohort,StudyObj) {
 #' @examples
 #' \dontrun{}
 UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
-  DebugPrint(paste0("Doing an analysis based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-  df<-GetCohortData(Cohort,StudyObj) #Get Cohorts data up to this point in time
-  df[df==-99]<-NA #Set -99 to missing
-  df<-ImputeCovariates(df,StudyObj) #Impute missgin covariates
-  
-  ##### Make some covariate factors
-  df$TRT<-as.factor(df$TRT)
-  df$SEXN<-as.factor(df$SEXN)
-  df$SANITATN<-as.factor(df$SANITATN)
-  df$AGE<-df$AGE/(12*30) #Rescale time to years
-  
-  library(lme4)
-  #### Perform LME estimation based on some covariates and treatment effects for each cohort
-  lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
-  
-  ##### Calculate new probabilites based on another cohort LME results
-  lmecoef<-summary(lmefit)$coefficients[,1] #Get coefficicents from LME
-  lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
-  lmecoef<-lmecoef[regexpr('AGE:TRT.*',names(lmecoef))==1]
-  lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
-  
-  #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-  #DebugPrint(lmecoef,1,StudyObj)
-  
-  probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
-  print(probs)
-  
-  #Update probabilitites to keep pre-defined portions 
-  probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
-  probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
-  probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
-  probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
-  DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-  print(probs)
-  
-  Cohort$UpdateProbabilities<-probs #The latest probability updates
-  StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
-  
-  for (j in 1:length(StudyObj$CohortList)) {#Update all dependent cohorts
-    if (!is.null(StudyObj$CohortList[[j]]$ProbabilityCohort) && cohortindex!=j && cohortindex==StudyObj$CohortList[[j]]$ProbabilityCohort) {#If cohort j should be updated based on prob in cohort i
-      DebugPrint(paste0("Updating probabilities in cohort ",StudyObj$CohortList[[j]]$Name," based on analysis in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-      RandProbs<-list() #Save previous randomization probabilities on cohort
-      RandProbs$CohortTime<-StudyObj$CohortList[[j]]$CurrentTime #The time until the probability was valid
-      RandProbs$StudyTime<-StudyObj$CurrentTime
-      RandProbs$FromCohort<-cohortindex
-      RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[j]]$RandomizationProbabilities
-      StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
-      StudyObj$CohortList[[j]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
+    DebugPrint(paste0("Doing an analysis based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    df<-GetCohortData(Cohort,StudyObj) #Get Cohorts data up to this point in time
+    df[df==-99]<-NA #Set -99 to missing
+    df<-ImputeCovariates(df,StudyObj) #Impute missgin covariates
+    
+    ##### Make some covariate factors
+    df$TRT<-as.factor(df$TRT)
+    df$SEXN<-as.factor(df$SEXN)
+    df$SANITATN<-as.factor(df$SANITATN)
+    df$AGE<-df$AGE/(12*30) #Rescale time to years
+    
+    library(lme4)
+    #### Perform LME estimation based on some covariates and treatment effects for each cohort
+    lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
+    
+    ##### Calculate new probabilites based on another cohort LME results
+    lmecoef<-summary(lmefit)$coefficients[,1] #Get coefficicents from LME
+    lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
+    lmecoef<-lmecoef[regexpr('AGE:TRT.*',names(lmecoef))==1]
+    lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
+    
+    if ((length(lmecoef)+1)!=length(Cohort$RandomizationProbabilities)) {
+      lmecoefnew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+      lmesenew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+      for (i in 1:(length(Cohort$RandomizationProbabilities)-1)) {
+        iIndex<-which(names(lmecoef)==paste0("AGE:TRT",i+1))
+        if (length(iIndex)!=0) {
+          lmecoefnew[i]<-lmecoef[iIndex]
+          lmesenew[i]<-lmese[iIndex]
+        }
+      }
+      names(lmecoefnew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+      names(lmesenew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+      lmecoef<-lmecoefnew
+      lmese<-lmesenew
     }
-  }
+    
+    #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    #DebugPrint(lmecoef,1,StudyObj)
+    
+    probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+    print(probs)
+    
+    #Update probabilitites to keep pre-defined portions 
+    probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
+    probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
+    probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
+    probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
+    DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    print(probs)
+    
+    Cohort$UpdateProbabilities<-probs #The latest probability updates
+    Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
+    Cohort$UpdateSE<-lmese #The latest coefficients standard errors
+    StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
+    
+    for (j in 1:length(StudyObj$CohortList)) {#Update all dependent cohorts
+      if (!is.null(StudyObj$CohortList[[j]]$ProbabilityCohort) && cohortindex!=j && cohortindex==StudyObj$CohortList[[j]]$ProbabilityCohort) {#If cohort j should be updated based on prob in cohort i
+        DebugPrint(paste0("Updating probabilities in cohort ",StudyObj$CohortList[[j]]$Name," based on analysis in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+        RandProbs<-list() #Save previous randomization probabilities on cohort
+        RandProbs$CohortTime<-StudyObj$CohortList[[j]]$CurrentTime #The time until the probability was valid
+        RandProbs$StudyTime<-StudyObj$CurrentTime
+        RandProbs$FromCohort<-cohortindex
+        RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[j]]$RandomizationProbabilities
+        RandProbs$Treatments<-StudyObj$CohortList[[j]]$Treatments
+        StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+        StudyObj$CohortList[[j]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
+      }
+    }
   return(StudyObj)
 }
 
@@ -395,7 +413,7 @@ AddCohortEvent<-function(StudyObj) { #Initialize a new cohort and add it to the 
 }
 
 #' GetTreatmentRandomizations
-#' 
+#'
 #' @description Get the treatment randomizations
 #'
 #' @param Num The treatment randomization probabilities.
@@ -892,6 +910,42 @@ MoveCompletedSubjects<-function(StudyObj) {
   return(StudyObj)
 }
 
+#' UpdateProbabilitiesEvent
+#'
+#' @description Update probabilities of non-connected cohorts.
+#'
+#' @param StudyObj A FAIRsimulator \code{study} object
+#'
+#' @return A FAIRsimulator \code{study} object
+#' @export
+#'
+#' @examples
+UpdateProbabilitiesEvent<-function(StudyObj) {
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      Cohorti<-StudyObj$CohortList[[i]]
+      for (j in 1:length(StudyObj$CohortList)) {
+        Cohortj<-StudyObj$CohortList[[j]]
+        if (i!=j && !is.null(Cohorti$ProbabilityCohort) && !is.null(Cohortj$ProbabilityCohort) && Cohorti$ProbabilityCohort==Cohortj$ProbabilityCohort) { #These two cohorts should be updated based on the same probability
+          if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities) && Cohorti$CohortStartTime>Cohortj$CohortStartTime) {
+            DebugPrint(paste0("Updating probabilities in ",Cohorti$Name," based on probabilities in ",Cohortj$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+            RandProbs<-list() #Save previous randomization probabilities on cohort
+            RandProbs$CohortTime<-StudyObj$CohortList[[i]]$CurrentTime #The time until the probability was valid
+            RandProbs$StudyTime<-StudyObj$CurrentTime
+            RandProbs$FromCohort<-j
+            RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
+            RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
+            StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+            StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
+          }
+        }
+      }  
+    }
+  }
+  return(StudyObj)
+}
+
+
 #' InitEvent
 #'
 #' @description Initialization event function. Reads in the necessary FREM stuff for the simulations.
@@ -903,22 +957,22 @@ MoveCompletedSubjects<-function(StudyObj) {
 #'
 #' @examples
 InitEvent <- function(StudyObj) {
-  
+
   #Read in all the FREM stuff
   runno <-'71' # The updated FREM model
   myExt <- system.file("extdata",paste0("run",runno,".ext"),package="FAIRsimulator")
   dfext <- subset(getExt(extFile = myExt),ITERATION=="-1000000000") #REad in parameter values
-  
+
   StudyObj$dfFFEMPool<-read.csv(file=system.file("extdata","dfFFEMPool-India-run71.csv",package="FAIRsimulator")) #Read in models that we can use
   StudyObj$dfSubjPool<-read.csv(file=system.file("extdata","dfSubj-India-run71.csv",package="FAIRsimulator")) #Read in covariates that we can use
-  
+
   StudyObj$calcHAZVector<-calcHAZVector #The function for simulating HAZ observations
-  
+
   noBaseThetas <- 6
   noCovThetas  <- 33
-  
+
   StudyObj$thbasevector <- as.numeric(dfext[2:(noBaseThetas+1)])
   StudyObj$sig     <- as.numeric(dfext[noBaseThetas+2+noCovThetas]) #Get the additive residual error (variance)
-  
+
   return(StudyObj)
 }
