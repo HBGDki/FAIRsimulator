@@ -162,6 +162,8 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     print(probs)
     
     Cohort$UpdateProbabilities<-probs #The latest probability updates
+    Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
+    Cohort$UpdateSE<-lmese #The latest coefficients standard errors
     StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
     
     for (j in 1:length(StudyObj$CohortList)) {#Update all dependent cohorts
@@ -210,8 +212,8 @@ StopEvent<-function(StudyObj) {
 }
 
 RecruitmentRatefunction<-function(StudyObj,Cohort) {
-#  return(5000) #Instantaneous randomization
-  return(20) #20 randomized subjects per time unit
+  return(5000) #Instantaneous randomization
+  #return(20) #20 randomized subjects per time unit
 }
 
 NewCohort<-function(StudyObj,CohortNum=NULL) { #Create a new cohort object
@@ -619,10 +621,10 @@ UpdateProbabilitiesEvent<-function(StudyObj) {
         Cohortj<-StudyObj$CohortList[[j]]
         if (i!=j && !is.null(Cohorti$ProbabilityCohort) && !is.null(Cohortj$ProbabilityCohort) && Cohorti$ProbabilityCohort==Cohortj$ProbabilityCohort) { #These two cohorts should be updated based on the same probability
           if (any(Cohorti$RandomizationProbabilities!=Cohortj$RandomizationProbabilities)) {
-            browser()
-            print("Hejsan")
-            print("Svejsan")
-            t<-0
+            # browser()
+            # print("Hejsan")
+            # print("Svejsan")
+            # t<-0
           }
         }
         
@@ -661,6 +663,7 @@ StudyDesignSettings$CohortNumbers<-3
 StudyDesignSettings$MaxNumberofSubjects<-c(320,320,320)
 #StudyDesignSettings$CohortStartTimes<-c(25,30,120)
 StudyDesignSettings$CohortStartTimes<-c(4*30,2*30,0)
+StudyDesignSettings$CohortStartTimes<-c(2,1,0)
 
 StudyDesignSettings$RandomizationProbabilities<-list(c(0.25,0.25,0.25,0.25), #Randomization probabilities for all possible treatments all cohorts
                                                      c(0.25,0.25,0.25,0.25),
@@ -674,7 +677,8 @@ StudyDesignSettings$Treatments<-list(c("SoC-1","TRT-1","TRT-2","TRT-3"),c("SoC-2
 StudyDesignSettings$EffSizes<-list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)) #EffectSizes for HAZ at 6 month of each treatment
 StudyDesignSettings$CohortAgeRange<-list(c(0,1)*30,c(6,7)*30,c(12,13)*30) #The age ranges for each cohort
 
-StudyDesignSettings$SamplingDesigns<-list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6,9,12)*30) #The sampling design for each pre-defined cohort
+StudyDesignSettings$SamplingDesigns<-list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6)*30) #The sampling design for each pre-defined cohort
+#StudyDesignSettings$SamplingDesigns<-list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6,9,12)*30) #The sampling design for each pre-defined cohort
 
 StudyDesignSettings$NewCohortLink<-list(2,3,NULL) #When a cohort is evolving to a new cohort, the information about randomization should be based on the cohort in the list, NULL= no evolving
 StudyDesignSettings$MoveLastSampleToNewCohort<-TRUE #If the last sample will be the baseline sample (subject cohorttime = 0) in the new cohort 
@@ -723,3 +727,6 @@ class(StudyObj) <- "study"
 StudyObj<-AdaptiveStudy(StudyObj)
 
 print(paste0("The study stopped at time: ",StudyObj$CurrentTime, " i.e. ",StudyObj$CurrentDate))
+
+StudyObj$CohortList %listmap% "UpdateProbabilities"
+StudyObj$CohortList %listmap% "UpdateCoefficients"
