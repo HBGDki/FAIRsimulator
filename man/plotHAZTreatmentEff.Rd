@@ -4,10 +4,22 @@
 \alias{plotHAZTreatmentEff}
 \title{plotHAZTreatmentEff}
 \usage{
-plotHAZTreatmentEff(StudyObj)
+plotHAZTreatmentEff(StudyObj,
+  treatmentNames = unique(unlist(StudyObj$StudyDesignSettings$Treatments)),
+  treatmentColors = ggplotColours(length(treatmentNames)),
+  SoCtrt = grep(pattern = "SoC",
+  unique(unlist(StudyObj$StudyDesignSettings$Treatments))), SoCcol = "black")
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
+
+\item{treatmentNames}{A vector of treatment names. Default is the treatment names assigned at study initialisation.}
+
+\item{treatmentColors}{A vector of colors for the treatment effects. Has to be the same length as the \code{treatmentNames}.}
+
+\item{SoCtrt}{A vector of indicies for the \code{treatmentNames} indicating Standard of Care treatment arms. The default is set by grepping \code{treatmentNames} for the string 'SoC'.}
+
+\item{SoCcol}{A vector of color names to assign to the SoC treatment arms.}
 }
 \value{
 A \code{ggplot} object
