@@ -620,14 +620,18 @@ UpdateProbabilitiesEvent<-function(StudyObj) {
       for (j in 1:length(StudyObj$CohortList)) {
         Cohortj<-StudyObj$CohortList[[j]]
         if (i!=j && !is.null(Cohorti$ProbabilityCohort) && !is.null(Cohortj$ProbabilityCohort) && Cohorti$ProbabilityCohort==Cohortj$ProbabilityCohort) { #These two cohorts should be updated based on the same probability
-          if (any(Cohorti$RandomizationProbabilities!=Cohortj$RandomizationProbabilities)) {
-            # browser()
-            # print("Hejsan")
-            # print("Svejsan")
-            # t<-0
+          if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities) && Cohorti$CohortStartTime>Cohortj$CohortStartTime) {
+            DebugPrint(paste0("Updating probabilities in ",Cohorti$Name," based on probabilities in ",Cohortj$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+            RandProbs<-list() #Save previous randomization probabilities on cohort
+            RandProbs$CohortTime<-StudyObj$CohortList[[i]]$CurrentTime #The time until the probability was valid
+            RandProbs$StudyTime<-StudyObj$CurrentTime
+            RandProbs$FromCohort<-j
+            RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
+            RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
+            StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+            StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
           }
         }
-        
       }  
     }
   }
