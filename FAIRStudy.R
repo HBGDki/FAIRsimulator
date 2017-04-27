@@ -147,6 +147,11 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     lmecoef<-lmecoef[regexpr('AGE:TRT.*',names(lmecoef))==1]
     lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
     
+    if ((length(lmecoef)+1)!=length(Cohort$RandomizationProbabilities)) {
+      browser()
+      print("Hej")
+    }
+    
     #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     #DebugPrint(lmecoef,1,StudyObj)
     
@@ -661,6 +666,8 @@ InitEvent <- function(StudyObj) {
 }
 
 ### Create the study object with all the design settign to send in to the Adaptive study
+
+set.seed(seed = 12334) #If we want to repeat results
 
 StudyDesignSettings<-list()
 StudyDesignSettings$CohortNumbers<-3
