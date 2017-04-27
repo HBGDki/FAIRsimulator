@@ -95,8 +95,8 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   EventList[[length(EventList)+1]] <- RecruitmentEvent #Add the Recruitment event
   EventList[[length(EventList)+1]] <- SimulateDataEvent #Add a Simulate data event
   EventList[[length(EventList)+1]] <- MoveCompletedSubjects #Move completed subjects event
-  
   EventList[[length(EventList)+1]] <- AnalyzeDataEvent #Add a Analyze data event
+  EventList[[length(EventList)+1]] <- UpdateProbabilitiesEvent #Update all probabilities, even for non directly connected cohorts
   
   StudyObj$EventList           <- EventList
   StudyObj$StudyDesignSettings <- StudyDesignSettings #Add the specific study design settings into the Study object
