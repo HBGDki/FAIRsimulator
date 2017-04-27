@@ -1,6 +1,6 @@
 ---
-title: "Vignette Title"
-author: "Vignette Author"
+title: "FAIRsimulator"
+author: "Niclas Jonsson and Joakim Nyberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -9,50 +9,72 @@ vignette: >
   \VignetteEncoding{UTF-8}
 ---
 
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
-
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
-
-## Vignette Info
-
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
-
-## Styles
-
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+```{r,message=FALSE, warning=FALSE}
+library(FAIRsimulator)
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+## Run a simulaiton
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+Assume there is a a FAIRsimulator study object available.
 
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+```{r}
+# Run the simulations in the exampel file
+#source("../FAIRstudy.R",echo=FALSE)
+load("../studyobj.Rdata")
 ```
 
-Also a quote using `>`:
+## Results
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+### Visualise the design
+
+```{r,fig.width=6}
+
+plotStudyCohorts(StudyObj)
+
+```
+
+## Visualise the number of subjects in each cohort over time.
+
+The number of subjects in each cohort is the result of recruitment rate, dropout and completion (i.e. being moved to the next cycle).
+
+```{r,fig.width=6}
+plotActiveSubjects(StudyObj)
+```
+
+### Visualise the simulated HAZ data
+
+```{r,fig.width=6}
+plotHAZ(StudyObj)
+```
+
+### Visualise the treatment effects
+
+```{r,fig.width=8,fig.height=8}
+plotHAZTreatmentEff(StudyObj)
+```
+
+### List the randomization probabilities
+
+Each cohort has a set of randomization probabilities. When subjects move to later cycles, they get assigned to new treatments according to probabilities that have been
+updated based on the previous cohort in the same age range. The randomization probabilities can be listed:
+
+```{r}
+kable(StudyObj$CohortList %listmap% "RandomizationProbabilities",digits = 2)
+```
+
+
+### List the updated randomization probabilities
+
+Once a study is finished, each cohort have updated randomization probabilities. These probabilities are available even if they were never used to inform
+the randomization of treatments in other cohorts. For example Cohort 1 in Cycle 3 will not inform the randomization in any other cohorts, since there are no 
+cohorts following it.
+
+```{r}
+kable(StudyObj$CohortList %listmap% "UpdateProbabilities",digits=2)
+
+
+StudyObj$CohortList[[4]]$PreviousRandomizationProbabilities
+```
+
+
