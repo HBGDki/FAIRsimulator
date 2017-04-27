@@ -55,7 +55,7 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   #The sampling design for each pre-defined cohort
   #StudyDesignSettings$SamplingDesigns <- list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6,9,12)*30) 
   
-  StudyDesignSettings$SamplingDesigns <- list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6)*30) 
+  StudyDesignSettings$SamplingDesigns <- samplingDesign
   
   #When a cohort is evolving to a new cohort, the information about randomization should be based on the cohort in the list, NULL= no evolving
   StudyDesignSettings$NewCohortLink <- list(2,3,NULL) 
