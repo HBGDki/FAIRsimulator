@@ -19,7 +19,7 @@ An operator that extracts elements from a lisy
 }
 \examples{
 \dontrun{
-mySubjects \%map\% item
+mySubjects \%listmap\% item
 }
 }
 
