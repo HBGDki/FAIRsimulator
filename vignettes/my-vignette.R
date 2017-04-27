@@ -2,9 +2,15 @@
 library(FAIRsimulator)
 
 ## ------------------------------------------------------------------------
-# Run the simulations in the exampel file
-#source("../FAIRstudy.R",echo=FALSE)
-load("../studyobj.Rdata")
+
+## Set the recrutment rate to something really fast
+RecruitmentRatefunction<-function(StudyObj,Cohort) {
+    return(5000) #Instantaneous randomization
+}
+StudyObj <- createStudy(RecruitmentFunction = RecruitmentRatefunction)
+
+## ------------------------------------------------------------------------
+StudyObj <- AdaptiveStudy(StudyObj)
 
 ## ----fig.width=6---------------------------------------------------------
 
@@ -25,7 +31,4 @@ kable(StudyObj$CohortList %listmap% "RandomizationProbabilities",digits = 2)
 
 ## ------------------------------------------------------------------------
 kable(StudyObj$CohortList %listmap% "UpdateProbabilities",digits=2)
-
-
-StudyObj$CohortList[[4]]$PreviousRandomizationProbabilities
 

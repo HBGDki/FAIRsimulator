@@ -14,14 +14,29 @@ library(FAIRsimulator)
 ```
 
 
-## Run a simulaiton
+## Run a simulation
 
-Assume there is a a FAIRsimulator study object available.
+The following study will be simulated:
+
+Three cohorts of children. The first recruited at age 0, the second at age 6 month and the third at age 12 month. 
+There are 4 treatments in each age interval 0-6, 6-12 and 12-18 months. At age 6 and 12 months, the children are randomized to new treatments. The initial randomization probabilities are
+0.25, 0.25, 0.25 and 0.25. The first treatment, SoC, will always have a probability of 0.25 while the other three treatments in each age interval will be updated based on the posterior
+probability of being the best treatment, as estimated based on the previous cohort in the same interval.
+
+First we initialise the study:
 
 ```{r}
-# Run the simulations in the exampel file
-#source("../FAIRstudy.R",echo=FALSE)
-load("../studyobj.Rdata")
+
+## Set the recrutment rate to something really fast
+RecruitmentRatefunction<-function(StudyObj,Cohort) {
+    return(5000) #Instantaneous randomization
+}
+StudyObj <- createStudy(RecruitmentFunction = RecruitmentRatefunction)
+```
+
+Then execute it:
+```{r}
+StudyObj <- AdaptiveStudy(StudyObj)
 ```
 
 ## Results
@@ -72,9 +87,6 @@ cohorts following it.
 
 ```{r}
 kable(StudyObj$CohortList %listmap% "UpdateProbabilities",digits=2)
-
-
-StudyObj$CohortList[[4]]$PreviousRandomizationProbabilities
 ```
 
 
