@@ -148,8 +148,19 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
     
     if ((length(lmecoef)+1)!=length(Cohort$RandomizationProbabilities)) {
-      browser()
-      print("Hej")
+      lmecoefnew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+      lmesenew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+      for (i in 1:(length(Cohort$RandomizationProbabilities)-1)) {
+        iIndex<-which(names(lmecoef)==paste0("AGE:TRT",i+1))
+        if (length(iIndex)!=0) {
+          lmecoefnew[i]<-lmecoef[iIndex]
+          lmesenew[i]<-lmese[iIndex]
+        }
+      }
+      names(lmecoefnew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+      names(lmesenew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+      lmecoef<-lmecoefnew
+      lmese<-lmesenew
     }
     
     #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
