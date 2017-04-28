@@ -982,7 +982,8 @@ AddNewBirthCohortEvent<-function(StudyObj) {
       Cohort<-StudyObj$CohortList[[i]]
       if (Cohort$Active==FALSE && Cohort$RandomizationAgeRange[1]==0 && Cohort$CycleNum==1 && Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) #If this cohort just ended and its time to add a new cohort
       {
-        NewChildCohort<-NewCohort(StudyObj,CohortNum=1)
+        BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==0}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
+        NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)
         NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
         NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
         DebugPrint(paste0("Create new birth cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
