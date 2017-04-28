@@ -245,7 +245,8 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     #DebugPrint(lmecoef,1,StudyObj)
     
     probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyObj$StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
-    print(probs)
+    nonupdateprobs<-probs #Save the not updated probs for statistics
+    #print(probs)
     
     #Update probabilitites to keep pre-defined portions 
     probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
@@ -253,7 +254,9 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
     probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
     DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-    print(probs)
+    #print(probs)
+    
+    ###Futility - returns prob 0 for futile treatments
     
     Cohort$UpdateProbabilities<-probs #The latest probability updates
     Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
@@ -268,9 +271,11 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
         RandProbs$StudyTime<-StudyObj$CurrentTime
         RandProbs$FromCohort<-cohortindex
         RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[j]]$RandomizationProbabilities
+        RandProbs$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[j]]$UnWeightedRandomizationProbabilities
         RandProbs$Treatments<-StudyObj$CohortList[[j]]$Treatments
         StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[j]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
         StudyObj$CohortList[[j]]$RandomizationProbabilities<-probs #Update the probabilities for the child cohort
+        StudyObj$CohortList[[j]]$UnWeightedRandomizationProbabilities<-nonupdateprobs #The unqeighted update probabilities for the cohort
       }
     }
   return(StudyObj)
@@ -316,7 +321,7 @@ AnalyzeDataEvent<-function(StudyObj) {
 #' @examples
 #' \dontrun{}
 StopEvent<-function(StudyObj) {
-  Crit<-StudyObj$CurrentTime>30*29
+  Crit<-StudyObj$CurrentTime>=StudyObj$StudyDesignSettings$StudyStopTime
   if (Crit) DebugPrint(paste0("Ending study simulations at study time ",StudyObj$CurrentTime),1,StudyObj)
   return(Crit)
 }
@@ -361,6 +366,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
     Cohort$MaxNumberOfSubjects        <- StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
     Cohort$SamplingDesign             <- StudyObj$StudyDesignSettings$SamplingDesigns[[CohortNum]] #The sampling design for this cohort
     Cohort$RandomizationProbabilities <- StudyObj$StudyDesignSettings$RandomizationProbabilities[[CohortNum]] #Get the randomization probabilities
+    Cohort$UnWeightedRandomizationProbabilities<-Cohort$RandomizationProbabilities
     Cohort$UpdateProbabilities        <- Cohort$RandomizationProbabilities #The Current updated probabilities
     Cohort$MinAllocationProbabilities <- StudyObj$StudyDesignSettings$MinAllocationProbabilities[[CohortNum]] #Get the minimum randomization probabilities
     Cohort$Treatments                 <- StudyObj$StudyDesignSettings$Treatments[[CohortNum]] #Get the treatments (treatment codes)
@@ -876,6 +882,7 @@ MoveCompletedSubjects<-function(StudyObj) {
           NewChildCohort$MaxNumberOfSubjects<-Cohort$MaxNumberOfSubjects #The maximum number of subject in this cohort
           NewChildCohort$SamplingDesign<-StudyObj$CohortList[[NewCohortLinkIndex]]$SamplingDesign #The sampling design for this cohort
           NewChildCohort$RandomizationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$UpdateProbabilities #Get the randomization probabilities
+          NewChildCohort$UnWeightedRandomizationProbabilities<-NewChildCohort$RandomizationProbabilities
           NewChildCohort$UpdateProbabilities<-NewChildCohort$RandomizationProbabilities
           NewChildCohort$MinAllocationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$MinAllocationProbabilities #Get the minimum randomization probabilities
           NewChildCohort$Treatments<-StudyObj$CohortList[[NewCohortLinkIndex]]$Treatments #Get the treatments (treatment codes)
@@ -923,23 +930,66 @@ MoveCompletedSubjects<-function(StudyObj) {
 UpdateProbabilitiesEvent<-function(StudyObj) {
   if (!is.null(StudyObj$CohortList)) {
     for (i in 1:length(StudyObj$CohortList)) {
+      linkedcohorts<-c()
       Cohorti<-StudyObj$CohortList[[i]]
       for (j in 1:length(StudyObj$CohortList)) {
         Cohortj<-StudyObj$CohortList[[j]]
         if (i!=j && !is.null(Cohorti$ProbabilityCohort) && !is.null(Cohortj$ProbabilityCohort) && Cohorti$ProbabilityCohort==Cohortj$ProbabilityCohort) { #These two cohorts should be updated based on the same probability
-          if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities) && Cohorti$CohortStartTime>Cohortj$CohortStartTime) {
-            DebugPrint(paste0("Updating probabilities in ",Cohorti$Name," based on probabilities in ",Cohortj$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
-            RandProbs<-list() #Save previous randomization probabilities on cohort
-            RandProbs$CohortTime<-StudyObj$CohortList[[i]]$CurrentTime #The time until the probability was valid
-            RandProbs$StudyTime<-StudyObj$CurrentTime
-            RandProbs$FromCohort<-j
-            RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
-            RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
-            StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
-            StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
+         # if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities) && Cohorti$CohortStartTime>Cohortj$CohortStartTime && Cohorti$Active==TRUE) {
+          if (Cohorti$CohortStartTime>Cohortj$CohortStartTime && Cohorti$Active==TRUE) {
+              linkedcohorts<-c(linkedcohorts,j) #Add a linked to cohort to the index list
           }
         }
       }  
+      ### Check which one is the latest of the linked cohorts and use that for updating
+      if (!is.null(linkedcohorts)) {
+        j<-max(linkedcohorts)
+        Cohortj<-StudyObj$CohortList[[j]]
+        if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities)) {
+          DebugPrint(paste0("Updating probabilities in ",Cohorti$Name," based on probabilities in ",Cohortj$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+          RandProbs<-list() #Save previous randomization probabilities on cohort
+          RandProbs$CohortTime<-StudyObj$CohortList[[i]]$CurrentTime #The time until the probability was valid
+          RandProbs$StudyTime<-StudyObj$CurrentTime
+          RandProbs$FromCohort<-j
+          RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
+          RandProbs$UnWeightedRandomizationProbabilities<-RandProbs$RandomizationProbabilities
+          RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
+          StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
+          StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
+          StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
+        }
+      }
+    }
+  }
+  return(StudyObj)
+}
+
+#' AddNewBirthCohortEvent
+#'
+#' @description Function for adding new cohorts at birth based on previous ended birth cohorts
+#'
+#' @param StudyObj A FAIRsimulator \code{study} object
+#'
+#' @return A FAIRsimulator \code{study} object
+#' @export
+#'
+#' @examples
+AddNewBirthCohortEvent<-function(StudyObj) {
+  #Note - assuming birth cohort is first element in StudyDesignSettings
+  
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      Cohort<-StudyObj$CohortList[[i]]
+      if (Cohort$Active==FALSE && Cohort$RandomizationAgeRange[1]==0 && Cohort$CycleNum==1 && Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) #If this cohort just ended and its time to add a new cohort
+      {
+        NewChildCohort<-NewCohort(StudyObj,CohortNum=1)
+        NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
+        NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
+        DebugPrint(paste0("Create new birth cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+        NewChildCohort$RandomizationProbabilities<-Cohort$UpdateProbabilities #Use the latest probabilities from previous birth cohort
+        StudyObj$CohortList[[(length(StudyObj$CohortList)+1)]]<-NewChildCohort
+        break
+      }
     }
   }
   return(StudyObj)
