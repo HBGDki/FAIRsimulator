@@ -7,9 +7,19 @@
 createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   samplingDesign = list(c(0, 1, 2, 3, 4, 5, 6) * 30, c(0/30, 3, 6) * 30,
   c(0/30, 3, 6) * 30), nSubjects = c(320, 320, 320), dropoutRates = c(0.2/(6
-  * 30), 0.2/(6 * 30), 0.2/(6 * 30)), recruitmentAges = list(c(0, 1) * 30,
-  c(6, 7) * 30, c(12, 13) * 30),
-  RecruitmentFunction = RecruitmentRatefunction, debugLevel = 1)
+  * 30), 0.2/(6 * 30), 0.2/(6 * 30)),
+  randomizationProbabilities = list(c(0.25, 0.25, 0.25, 0.25), c(0.25, 0.25,
+  0.25, 0.25), c(0.25, 0.25, 0.25, 0.25)),
+  minAllocationProbabilities = list(c(0.25, 0, 0, 0), c(0.25, 0, 0, 0),
+  c(0.25, 0, 0, 0)), treatments = list(c("SoC-1", "TRT-1", "TRT-2", "TRT-3"),
+  c("SoC-2", "TRT-4", "TRT-5", "TRT-6"), c("SoC-3", "TRT-7", "TRT-8", "TRT-9")),
+  effSizes = list(c(0, 0.05, 0.1, 0.25), c(0, 0, 0.05, 0.25), c(0, 0.05, 0.25,
+  0.3)), newCohortLink = list(2, 3, NULL), recruitmentAges = list(c(0, 1) *
+  30, c(6, 7) * 30, c(12, 13) * 30),
+  RecruitmentFunction = RecruitmentRatefunction, debugLevel = 1,
+  studyStopTime = 30 * 28, latestTimeForNewBirthCohorts = 0,
+  strCovariates = c("BIRTHWT", "MAGE", "MHTCM", "SEXN", "SANITATN"),
+  currentDate = Sys.Date())
 }
 \arguments{
 \item{nCohorts}{The number of cohorts.}
@@ -20,11 +30,31 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{nSubjects}{A vector of number of subjects in each cohort.}
 
-\item{dropoutRates}{A vector of dropout rates (per day) for each of the cohorts}
+\item{dropoutRates}{A vector of dropout rates (per day) for each of the cohorts.}
+
+\item{randomizationProbabilities}{Initial randomization probabilities.}
+
+\item{minAllocationProbabilities}{Minium allocation for each treatment, default 25% allocation for SoC.}
+
+\item{treatments}{A list of treatments for each cohort.}
+
+\item{effSizes}{A list of effect sizes for each treatment in each cohort, default effect size per 6 month.}
+
+\item{newCohortLink}{A vector of dependencies between cohorts when evolving in age, default Cohort 1 will evolve similar to cohort 2, Cohort 2 will evolve similar to cohort 3, Cohort 3 will not evlove.}
 
 \item{recruitmentAges}{A list of age ranges in which subjects are recruited to each cohort. Each list component should be a vector with the min and max age.}
 
-\item{debugLevel}{The debug level. 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing}
+\item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
+
+\item{debugLevel}{The debug level. 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing.}
+
+\item{studyStopTime}{The number of days the study will continue.}
+
+\item{latestTimeForNewBirthCohorts}{The latest time for new birth cohorts to start (in days), default 0 = No new birth cohorts.}
+
+\item{strCovariates}{A vector with the names of the covariates that should be used in the interim analysis.}
+
+\item{currentDate}{The study start date, default = current system date.}
 }
 \value{
 A FAIRsimulator \code{study} object ready to be executed.
