@@ -32,7 +32,7 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3"),c("SoC-2","TRT-4","TRT-5","TRT-6"),c("SoC-3","TRT-7","TRT-8","TRT-9")),
                         effSizes = list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)),
                         newCohortLink = list(2,3,NULL),
-                        recruitmentAges = list(c(0,1)*30,c(6,7)*30,c(12,13)*30),RecruitmentFunction=RecruitmentRatefunction,
+                        recruitmentAges = list(c(0,1)*30,c(6,7)*30,c(12,13)*30),Recruitmentfunction=RecruitmentRatefunction,
                         debugLevel=1,studyStopTime=30*28,latestTimeForNewBirthCohorts=0,
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
                         currentDate = Sys.Date()) {
@@ -89,8 +89,8 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   StudyObj$CurrentDate <- currentDate #The date that the study will start
   
   ## Add recruitmentrate function
-  StudyObj$Recruitmentfunction <- RecruitmentRatefunction
-  
+  StudyObj$Recruitmentfunction <- Recruitmentfunction
+
   ## Define events
   StudyObj$InitEvent           <- InitEvent
   StudyObj$StudyIncrementEvent <- StudyIncrementEvent
