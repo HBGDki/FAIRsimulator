@@ -58,11 +58,13 @@ plotProbs <- function(StudyObj,strProb="RandomizationProbabilities") {
 
   xs <- split(randProbs,f = randProbs$CohortAge)
   
-  p1 <- ggplot(xs$'0-6 months',aes(RandStudyTime,Prob,group=TreatmentName,color=TreatmentName)) +
+  p1 <- ggplot(xs$'0-6 months',aes(RandStudyTime/30,Prob,group=TreatmentName,color=TreatmentName)) +
     geom_point() +
     geom_line() +
     theme(legend.position="top") +
     labs(color=NULL) +
+    xlab("Study time (months)") +
+    ylab("Randomization probability") +
     facet_wrap(~CohortAge)
   
   p2 <- p1 %+% xs$'6-12 months'
