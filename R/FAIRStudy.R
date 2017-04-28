@@ -107,23 +107,42 @@ InterimAnalyzesTime<-function(Cohort,StudyObj) {
 
 
 #' ImputeCovariates
-#' @description Impute covariate - simple median imputation per individual (strIDVariable) of data frame (without correlation) of covariates in covariates vector.
+#' @description Single imputation of covariates by two methods: predictive mean matching and median imputation. Predictive mean matching (default) aggregates the variable to the child level, imputes the covariates by predictive mean matching, and expands the result to all observations per individual (\code{strIDVariable}). This method accounts for the correlations between the variables. Median imputation imputes the median imputation per individual of data frame (without correlation) of covariates in covariates vector.
 #'
 #' @param df A \code{data.frame} in which to impute missing covariate values.
 #' @param StudyObj A FAIRsimulator \code{study} object
-#' @param strID A string with the name of the columns in \code{df} containing the subject identifiers.
+#' @param strIDVariable A string with the name of the columns in \code{df} containing the subject identifiers.
+#' @param method A string identifying the imputation method. Current implemented methods are 
+#' \code{method = "pmm"} (default) and \code{method = "median"}.
 #' 
 #' @return A \code{data.frame} with all missing covariates imputed.
 #' @export
 #'
 #' @examples
 #' \dontrun{}
-ImputeCovariates <- function(df,StudyObj,strIDVariable = "ID") {
-
-  for (i in 1:length(StudyObj$StudyDesignSettings$Covariates)) {
-    strcov<-StudyObj$StudyDesignSettings$Covariates[i]
-    df[is.na(df[[strcov]]),strcov]<-median(df[!duplicated(strIDVariable),strcov],na.rm=TRUE)
+ImputeCovariates <- function(df, StudyObj, strIDVariable = "ID", 
+                             method = c("pmm", "median")) {
+  
+  method <- match.arg(method)
+  
+  if (method == "median") {
+    for (i in 1:length(StudyObj$StudyDesignSettings$Covariates)) {
+      strcov<-StudyObj$StudyDesignSettings$Covariates[i]
+      df[is.na(df[[strcov]]),strcov]<-median(df[!duplicated(strIDVariable),strcov],na.rm=TRUE)
+    }
   }
+  
+  if (method == "pmm") {
+    ini <- mice::mice(df, maxit = 0, m = 1, printFlag = FALSE)
+    pred <- ini$predictorMatrix
+    strIDVariable <- strIDVariable[1]
+    pred[pred[, strIDVariable] == 1, strIDVariable] <- (-2)
+    meth <- ini$method
+    meth[ini$nmis > 0] <- "2lonly.pmm"
+    imp <- mice::mice(df, pred = pred, meth = meth, m = 1, printFlag = FALSE)
+    df <- mice::complete(imp, 1)
+  }
+  
   return(df)
 }
 
