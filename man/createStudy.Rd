@@ -16,7 +16,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   effSizes = list(c(0, 0.05, 0.1, 0.25), c(0, 0, 0.05, 0.25), c(0, 0.05, 0.25,
   0.3)), newCohortLink = list(2, 3, NULL), recruitmentAges = list(c(0, 1) *
   30, c(6, 7) * 30, c(12, 13) * 30),
-  RecruitmentFunction = RecruitmentRatefunction, debugLevel = 1,
+  Recruitmentfunction = RecruitmentRatefunction, debugLevel = 1,
   studyStopTime = 30 * 28, latestTimeForNewBirthCohorts = 0,
   strCovariates = c("BIRTHWT", "MAGE", "MHTCM", "SEXN", "SANITATN"),
   currentDate = Sys.Date())
@@ -44,8 +44,6 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{recruitmentAges}{A list of age ranges in which subjects are recruited to each cohort. Each list component should be a vector with the min and max age.}
 
-\item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
-
 \item{debugLevel}{The debug level. 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing.}
 
 \item{studyStopTime}{The number of days the study will continue.}
@@ -55,6 +53,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 \item{strCovariates}{A vector with the names of the covariates that should be used in the interim analysis.}
 
 \item{currentDate}{The study start date, default = current system date.}
+
+\item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
 }
 \value{
 A FAIRsimulator \code{study} object ready to be executed.
