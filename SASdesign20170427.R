@@ -1,13 +1,55 @@
 library(FAIRsimulator)
 library(gridExtra)
 
+## The two functions below are included in the package (FAIRstudy.R).
+
+# futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignSettings$MinimumNumberofSubjects) {
+#   
+#   tmp <- 
+#     getItemsFromSubjects(Cohort) %>%  # Get all subject data from Cohort
+#     filter(CurrentCohortTime >= Cohort$CurrentTime) %>% # Select the non-dropped subjects
+#     group_by(Treatment) %>% distinct(StudyID) %>%  # group by Treatment and select the IDs 
+#     tally    # Cound the number of individuals per Treatment
+#     
+#   ## Now we need to check if the number treatments in the data is correct or if we need to add rows
+#   trts <- Cohort$Treatments
+#   if(length(trts) > nrow(tmp)) {
+#     ndf <- data.frame(Treatment = trts[!(trts %in% tmp$Treatment)],n=0)
+#     tmp <- bind_rows(tmp,ndf)
+#   }
+#   
+#   indPerTreatment <-  tmp %>% 
+#     mutate(Treatment = factor(.$Treatment,levels=trts)) %>% # Make Treatment a factor so it can be ordered
+#     arrange(Treatment) %>% # Sort the treatment so the order correspond to probs
+#     mutate(probs = probs,N = n*probs) %>% # Compute the expected number of subjects per treatment given the current probabilities
+#     mutate(newProbs = ifelse(N<minSubj,0,probs)) # Create new probabilities by setting some to zero based on criteria
+#   
+#   return(indPerTreatment$newProbs)
+# }
+# 
+# updateProbs <- function(probs,Cohort,minProb = Cohort$MinAllocationProbabilities) {
+# 
+#   probs[minProb!=0] <- minProb[minProb!=0]
+#   probspresum       <- sum(probs[minProb!=0])
+#   probssum          <- sum(probs[minProb==0])
+#   probs[minProb==0] <- (1-probspresum)*probs[minProb==0]/probssum
+#   DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+# 
+#   return(probs)
+# }
+# 
+
 StudyObj <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32*30,
+                        nSubjects = c(320,320,320),
                         randomizationProbabilities = list(rep(0.20,5),rep(0.20,5),rep(0.20,5)),
                         #minAllocationProbabilities = list(c(0,rep(0,4)),c(0,rep(0,4)),c(0,rep(0,4))),
                         minAllocationProbabilities = list(c(0.2,rep(0,4)),c(0.2,rep(0,4)),c(0.2,rep(0,4))),
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
-                        Recruitmentfunction=function(...) {return(5000)})
+                        Recruitmentfunction=function(...) {return(5000)},
+                        minSubjects = 10)
+
+set.seed(32423) # This works now.
 
 StudyObj<-AdaptiveStudy(StudyObj)
 

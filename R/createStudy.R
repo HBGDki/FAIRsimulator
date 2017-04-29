@@ -32,10 +32,13 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3"),c("SoC-2","TRT-4","TRT-5","TRT-6"),c("SoC-3","TRT-7","TRT-8","TRT-9")),
                         effSizes = list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)),
                         newCohortLink = list(2,3,NULL),
-                        recruitmentAges = list(c(0,1)*30,c(6,7)*30,c(12,13)*30),Recruitmentfunction=RecruitmentRatefunction,
+                        recruitmentAges = list(c(0,1)*30,c(6,7)*30,c(12,13)*30),
+                        Recruitmentfunction=RecruitmentRatefunction,
+                        Futilityfunction=futilityFunction,
                         debugLevel=1,studyStopTime=30*28,latestTimeForNewBirthCohorts=0,
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
-                        currentDate = Sys.Date()) {
+                        currentDate = Sys.Date(),
+                        minSubjects = 5) {
   
   ## Create the study design setting list ##
   
@@ -82,6 +85,9 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   #The current ID number, i.e. global counter of ID number
   StudyDesignSettings$CurrentID  <- 1 
   
+  # The minimum number of subjects per treatment for futility
+  StudyDesignSettings$MinimumNumberofSubjects  <- minSubjects
+  
   ## Create the study object ##
   StudyObj <- list()
   
@@ -90,6 +96,9 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   
   ## Add recruitmentrate function
   StudyObj$Recruitmentfunction <- Recruitmentfunction
+  
+  ## Add futility function
+  StudyObj$Futilityfunction    <- Futilityfunction
 
   ## Define events
   StudyObj$InitEvent           <- InitEvent

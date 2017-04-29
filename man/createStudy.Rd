@@ -16,10 +16,11 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   effSizes = list(c(0, 0.05, 0.1, 0.25), c(0, 0, 0.05, 0.25), c(0, 0.05, 0.25,
   0.3)), newCohortLink = list(2, 3, NULL), recruitmentAges = list(c(0, 1) *
   30, c(6, 7) * 30, c(12, 13) * 30),
-  Recruitmentfunction = RecruitmentRatefunction, debugLevel = 1,
-  studyStopTime = 30 * 28, latestTimeForNewBirthCohorts = 0,
-  strCovariates = c("BIRTHWT", "MAGE", "MHTCM", "SEXN", "SANITATN"),
-  currentDate = Sys.Date())
+  Recruitmentfunction = RecruitmentRatefunction,
+  Futilityfunction = futilityFunction, debugLevel = 1, studyStopTime = 30
+  * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
+  "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
+  minSubjects = 5)
 }
 \arguments{
 \item{nCohorts}{The number of cohorts.}
