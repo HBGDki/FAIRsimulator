@@ -249,15 +249,26 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     #print(probs)
     
     #Update probabilitites to keep pre-defined portions 
-    probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
-    probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
-    probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
-    probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
-    DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-    #print(probs)
     
+    # # define a function to update probabilities to honor the minimum allocation probabilities
+    # updateProbs <- function(probs,Cohort) {
+    #   probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
+    #   probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
+    #   probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
+    #   probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
+    #   DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+    #   #print(probs)
+    #   return(probs)
+    # }
+    
+    probs <- updateProbs(probs,Cohort)
+    
+    #updateProbs(indPerTreatment$newProbs,Cohort)
     ###Futility - returns prob 0 for futile treatments
     
+    # browser()
+    probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+
     Cohort$UpdateProbabilities<-probs #The latest probability updates
     Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
     Cohort$UpdateSE<-lmese #The latest coefficients standard errors
@@ -1026,4 +1037,70 @@ InitEvent <- function(StudyObj) {
   StudyObj$sig     <- as.numeric(dfext[noBaseThetas+2+noCovThetas]) #Get the additive residual error (variance)
 
   return(StudyObj)
+}
+
+#' futilityFunction
+#' 
+#' @description Function to determine if treatments are futile.
+#'
+#' @param probs The current randomization probabilities after having taken the minimum randomisation probabilities into account.
+#' @param Cohort A FAIRsimulator \code{cohort} object
+#' @param StudyObj A FAIRsimulator \code{study} object
+#' @param minSubj The cutoff for the number of subjects expected to be randomised to a treatment.
+#' 
+#' @details The function checks the expected number of subjects to be randomised to a particular treatment given the probabilities in \code{probs}. Any treatment that has an expected number of subjects 
+#' lower than or equal to \code{minSubj} will have their randomisation probabilitiy set to 0. The remaining probabilities will be adjusted to add up to 1.
+#'
+#' @return A vector of updated probabilities.
+#' @export
+#'
+#' @examples
+futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignSettings$MinimumNumberofSubjects) {
+  
+  tmp <- 
+    getItemsFromSubjects(Cohort) %>%  # Get all subject data from Cohort
+    filter(CurrentCohortTime >= Cohort$CurrentTime) %>% # Select the non-dropped subjects
+    group_by(Treatment) %>% distinct(StudyID) %>%  # group by Treatment and select the IDs 
+    tally    # Cound the number of individuals per Treatment
+  
+  ## Now we need to check if the number treatments in the data is correct or if we need to add rows
+  trts <- Cohort$Treatments
+  if(length(trts) > nrow(tmp)) {
+    ndf <- data.frame(Treatment = trts[!(trts %in% tmp$Treatment)],n=0)
+    tmp <- bind_rows(tmp,ndf)
+  }
+  
+  indPerTreatment <-  tmp %>% 
+    mutate(Treatment = factor(.$Treatment,levels=trts)) %>% # Make Treatment a factor so it can be ordered
+    arrange(Treatment) %>% # Sort the treatment so the order correspond to probs
+    mutate(probs = probs,N = n*probs) %>% # Compute the expected number of subjects per treatment given the current probabilities
+    mutate(newProbs = ifelse(N<minSubj,0,probs)) # Create new probabilities by setting some to zero based on criteria
+  
+  probs <- updateProbs(indPerTreatment$newProbs,Cohort)
+  
+  return(probs)
+}
+
+#' updateProbs
+#' 
+#' @description Updates a vector of probabilties so that one or more of the probabilities are of at least a certain size.
+#'
+#' @param probs A vector of probabilities to be adjusted. The vector sum does not have to be 1.
+#' @param Cohort A FAIRsimulator \code{cohort} object
+#' @param minProb A vector of the same length as \code{probs} with the minimum values.
+#'
+#' @details Typically used to ensure that standard of care always have a certain randomisation probability.
+#' @return A vector of probabilties in which the minimum probabilties are honored and the remaining probabilities are adjusted so that the vector sum is 1.
+#' @export
+#'
+#' @examples
+updateProbs <- function(probs,Cohort,minProb = Cohort$MinAllocationProbabilities) {
+  
+  probs[minProb!=0] <- minProb[minProb!=0]
+  probspresum       <- sum(probs[minProb!=0])
+  probssum          <- sum(probs[minProb==0])
+  probs[minProb==0] <- (1-probspresum)*probs[minProb==0]/probssum
+  DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
+  
+  return(probs)
 }
