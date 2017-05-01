@@ -1104,3 +1104,142 @@ updateProbs <- function(probs,Cohort,minProb = Cohort$MinAllocationProbabilities
   
   return(probs)
 }
+
+#' getCohortAgeRange
+#' 
+#' Creates a lookup data .frame with CohortName, Recruitment age range and a Label for the age group. 
+#'
+#' @param StudyObj A FAIRsimulator \code{study} object
+#' @param cohortAgeNames An optional vecto of labels for the age groups
+#'
+#' @return A data.frame with columns CohortName, AgeRange and CohortAge
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' getCohortAgeRange(StudyObj)
+#' }
+getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 months","12-18 months")) {
+  
+  allData <- getAllSubjectData(StudyObj)
+  AgeRanges <- StudyObj$StudyDesignSettings$CohortAgeRange
+  
+  myCohorts <- cohorts(StudyObj)
+  
+  resDf <- data.frame()
+  for (i in 1:length(myCohorts))  {
+    Cohort <- myCohorts[[i]]
+    for (j in 1:length(AgeRanges)) {
+      if (AgeRanges[[j]][1] == Cohort$RandomizationAgeRange[1] && AgeRanges[[j]][2] == Cohort$RandomizationAgeRange[2]) {
+        resDf[i,"CohortName"] <- Cohort$Name
+        resDf[i,"AgeRange"]   <- paste0(AgeRanges[[j+Cohort$CycleNum-1]][1]/30, "-",AgeRanges[[j+Cohort$CycleNum-1]][2]/30," month")
+        resDf[i,"MinAge"]     <-  AgeRanges[[j+Cohort$CycleNum-1]][1]/30
+      }
+    }
+  }
+  
+  resDf$CohortAge <- resDf$AgeRange
+  if(!is.null(cohortAgeNames)) {
+    
+    minAges <- sort(unique(resDf$MinAge))
+    if(length(minAges) != length(cohortAgeNames)) stop("The number of ages in StudyObj should be the same as cohortageNames.")
+    
+    for(i in 1:length(minAges)) {
+      resDf$CohortAge <- ifelse(resDf$MinAge == minAges[i], cohortAgeNames[i],resDf$CohortAge)
+    }
+  }
+  
+  resDf <- resDf %>% select(-MinAge)  %>% mutate(CohortAge = factor(CohortAge,levels=cohortAgeNames))
+  
+  return(resDf)
+}
+
+#' getProbData
+#' 
+#' Extracts the randomization probabilities from all cohorts over time.
+#'
+#' @param StudyObj A FAIRsimulator \code{study} object
+#' @param strProb A string indicating the probabilities to extract. Possible values are "UnWeightedRandomizationProbabilities" and "RandomizationProbabilities". The former 
+#' are the probabilities after adjustment for minimum allocation probabilities and the latter are the unadjusted probabilities.
+#' @param ... Other parameters passed to \code{getCohortAgeRange}
+#'
+#' @return A data.frame with columns CohortName (cohort name), Prob (probability),  TreatmentName, CohortAge (cohort age group label) and  RandStudyTime 
+#' (the time the randomisation probabilities were set).
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' probData <- getProbData(StudyObj)
+#' }
+getProbData <- function(StudyObj,strProb="RandomizationProbabilities",...) {
+  
+  allData <- getAllSubjectData(StudyObj)
+  resDf   <- getCohortAgeRange(StudyObj,...)  
+  allData <- left_join(allData,resDf,by="CohortName")
+  
+  myCohorts <- cohorts(StudyObj)
+  
+  cohrtNams    <- dimnames(myCohorts %listmap% strProb)[[2]]
+  probs        <- data.frame(myCohorts %listmap% strProb) 
+  names(probs) <- cohrtNams
+  
+  treatnames        <- data.frame(myCohorts %listmap% "Treatments")
+  names(treatnames) <- cohrtNams
+  
+  
+  probs      <- probs      %>%   gather(key="CohortName",value="Prob") 
+  treatnames <- treatnames %>%   gather(key="CohortName",value="TreatmentName") 
+  
+  probs$TreatmentName <- treatnames$TreatmentName
+  
+  randProbs <- allData %>% distinct(CohortAge,CohortName,.keep_all=TRUE) %>% dplyr::select(CohortAge,CohortName,RandStudyTime) %>% left_join(probs,.,by="CohortName")
+  
+  randProbs$TreatmentName <- factor(randProbs$TreatmentName,levels=unlist(StudyObj$StudyDesignSettings$Treatments))
+  
+  return(randProbs)
+}
+
+#' plotProbs
+#' 
+#' Plots the randomization probabilities over study time stratified by age treatment group.
+#'
+#' @param StudyObj A FAIRsimulator \code{study} object
+#' @param ... Other parameters passed to \code{getCohortAgeRange}
+#'
+#' @return An invisible list of ggplot objects, one for each age tretament group.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' plotProbs(StudyObj)
+#' }
+plotProbs <- function(StudyObj,...) {
+  
+  probData <- getProbData(StudyObj,...)
+  xs <- split(probData,f = probData$CohortAge)
+  
+  plotList <- list()
+  
+  plotList[[1]] <- ggplot(xs[[1]],aes(RandStudyTime/30,Prob,group=TreatmentName,color=TreatmentName)) +
+    geom_point() +
+    geom_line() +
+    theme(legend.position="top") +
+    labs(color=NULL) +
+    xlab("Study time (months)") +
+    ylab("Randomization probability") +
+    facet_wrap(~CohortAge)
+  
+  for(i in 2:length(xs)) {
+    plotList[[i]] <- plotList[[1]] %+% xs[[i]]
+  }
+  
+  retVal <- plotList 
+  
+  ## print the plots  
+  plotList$ncol <- length(xs)
+  do.call(grid.arrange,plotList)
+  
+  # Return the plot list without printing
+  return(invisible(retVal))
+}
+

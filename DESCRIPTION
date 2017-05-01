@@ -13,7 +13,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 5.0.1
-Depends: tidyverse (>= 1.0.0), zoo (>= 1.7-12), knitr, MASS, lme4
+Depends: zoo (>= 1.7-12), knitr, MASS, lme4, gridExtra, tidyverse (>= 1.0.0)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
