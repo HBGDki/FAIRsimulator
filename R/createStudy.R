@@ -62,7 +62,8 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         MoveCompletedSubjectsFunction = MoveCompletedSubjects,
                         AnalyzeDataEventFunction = AnalyzeDataEvent, 
                         UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
-                        AddNewBirthCohortEventFunction = AddNewBirthCohortEvent) {
+                        AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
+                        probTemperationFunction = probTemeration) {
   
   ## Create the study design setting list ##
   
@@ -115,6 +116,8 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   # Set the imputation method
   StudyDesignSettings$ImpMethod  <- match.arg(impMethod)
   
+  # Function to modify the unweighted ranndomization probabilities
+  StudyDesignSettings$probTemperation <- probTemperationFunction
   
   ## Create the study object ##
   StudyObj <- list()
