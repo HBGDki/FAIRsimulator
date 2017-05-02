@@ -261,7 +261,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     #   return(probs)
     # }
     
-    probs <- updateProbs(probs,Cohort)
+    probs <- updateProbs(StudyObj,probs,Cohort)
     
     #updateProbs(indPerTreatment$newProbs,Cohort)
     ###Futility - returns prob 0 for futile treatments
@@ -1076,7 +1076,7 @@ futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignS
     mutate(probs = probs,N = n*probs) %>% # Compute the expected number of subjects per treatment given the current probabilities
     mutate(newProbs = ifelse(N<minSubj,0,probs)) # Create new probabilities by setting some to zero based on criteria
   
-  probs <- updateProbs(indPerTreatment$newProbs,Cohort)
+  probs <- updateProbs(StudyObj,indPerTreatment$newProbs,Cohort)
   
   return(probs)
 }
@@ -1085,6 +1085,7 @@ futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignS
 #' 
 #' @description Updates a vector of probabilties so that one or more of the probabilities are of at least a certain size.
 #'
+#' @param StudyObj A FAIRsimulator \code{study} object
 #' @param probs A vector of probabilities to be adjusted. The vector sum does not have to be 1.
 #' @param Cohort A FAIRsimulator \code{cohort} object
 #' @param minProb A vector of the same length as \code{probs} with the minimum values.
@@ -1094,7 +1095,7 @@ futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignS
 #' @export
 #'
 #' @examples
-updateProbs <- function(probs,Cohort,minProb = Cohort$MinAllocationProbabilities) {
+updateProbs <- function(StudyObj,probs,Cohort,minProb = Cohort$MinAllocationProbabilities) {
   
   probs[minProb!=0] <- minProb[minProb!=0]
   probspresum       <- sum(probs[minProb!=0])

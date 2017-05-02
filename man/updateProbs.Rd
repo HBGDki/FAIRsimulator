@@ -4,9 +4,12 @@
 \alias{updateProbs}
 \title{updateProbs}
 \usage{
-updateProbs(probs, Cohort, minProb = Cohort$MinAllocationProbabilities)
+updateProbs(StudyObj, probs, Cohort,
+  minProb = Cohort$MinAllocationProbabilities)
 }
 \arguments{
+\item{StudyObj}{A FAIRsimulator \code{study} object}
+
 \item{probs}{A vector of probabilities to be adjusted. The vector sum does not have to be 1.}
 
 \item{Cohort}{A FAIRsimulator \code{cohort} object}
