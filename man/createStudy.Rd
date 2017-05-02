@@ -20,7 +20,17 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   Futilityfunction = futilityFunction, debugLevel = 1, studyStopTime = 30
   * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
   "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
-  minSubjects = 5, impMethod = c("pmm", "median"))
+  minSubjects = 5, impMethod = c("pmm", "median"),
+  InitEventFunction = InitEvent,
+  StudyIncrementEventFunction = StudyIncrementEvent,
+  StopEventFunction = StopEvent, AddCohortEventFunction = AddCohortEvent,
+  DropoutEventFunction = DropoutEvent,
+  RecruitmentEventFunction = RecruitmentEvent,
+  SimulateDataEventFunction = SimulateDataEvent,
+  MoveCompletedSubjectsFunction = MoveCompletedSubjects,
+  AnalyzeDataEventFunction = AnalyzeDataEvent,
+  UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
+  AddNewBirthCohortEventFunction = AddNewBirthCohortEvent)
 }
 \arguments{
 \item{nCohorts}{The number of cohorts.}
@@ -57,7 +67,29 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{impMethod}{Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.}
 
+\item{StudyIncrementEventFunction}{Study increment event function}
+
+\item{StopEventFunction}{Stop event function}
+
+\item{AddCohortEventFunction}{= Add cohort event function}
+
+\item{DropoutEventFunction}{= Dropout event function}
+
+\item{RecruitmentEventFunction}{= Recruitment event function}
+
+\item{SimulateDataEventFunction}{= Simulate data event function}
+
+\item{MoveCompletedSubjectsFunction}{= Move completed subjects function}
+
+\item{AnalyzeDataEventFunction}{= Analyze data event function}
+
+\item{UpdateProbabilitiesEventFunction}{= UpdateProbabilitiesEvent,}
+
+\item{AddNewBirthCohortEventFunction}{Add new birth cohort event function}
+
 \item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
+
+\item{InitEvent}{Init event funciton}
 }
 \value{
 A FAIRsimulator \code{study} object ready to be executed.
