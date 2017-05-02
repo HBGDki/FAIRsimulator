@@ -240,7 +240,6 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
       lmecoef<-lmecoefnew
       lmese<-lmesenew
     }
-    
     #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     #DebugPrint(lmecoef,1,StudyObj)
     
@@ -270,6 +269,8 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
 
     Cohort$UpdateProbabilities<-probs #The latest probability updates
+    Cohort$UnWeightedUpdateProbabilities<-nonupdateprobs #The latest probability updates
+    
     Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
     Cohort$UpdateSE<-lmese #The latest coefficients standard errors
     StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
@@ -893,7 +894,7 @@ MoveCompletedSubjects<-function(StudyObj) {
           NewChildCohort$MaxNumberOfSubjects<-Cohort$MaxNumberOfSubjects #The maximum number of subject in this cohort
           NewChildCohort$SamplingDesign<-StudyObj$CohortList[[NewCohortLinkIndex]]$SamplingDesign #The sampling design for this cohort
           NewChildCohort$RandomizationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$UpdateProbabilities #Get the randomization probabilities
-          NewChildCohort$UnWeightedRandomizationProbabilities<-NewChildCohort$RandomizationProbabilities
+          NewChildCohort$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$UnWeightedUpdateProbabilities #Get the randomization probabilities
           NewChildCohort$UpdateProbabilities<-NewChildCohort$RandomizationProbabilities
           NewChildCohort$MinAllocationProbabilities<-StudyObj$CohortList[[NewCohortLinkIndex]]$MinAllocationProbabilities #Get the minimum randomization probabilities
           NewChildCohort$Treatments<-StudyObj$CohortList[[NewCohortLinkIndex]]$Treatments #Get the treatments (treatment codes)
@@ -963,11 +964,16 @@ UpdateProbabilitiesEvent<-function(StudyObj) {
           RandProbs$StudyTime<-StudyObj$CurrentTime
           RandProbs$FromCohort<-j
           RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
-          RandProbs$UnWeightedRandomizationProbabilities<-RandProbs$RandomizationProbabilities
+#          if (!is.null(StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities)) {
+            RandProbs$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities
+ #         } else {
+          #  RandProbs$RandomizationProbabilities
+  #        }
+            
           RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
           StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
           StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
-          StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
+          StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities<-Cohortj$UnWeightedUpdateProbabilities
         }
       }
     }
@@ -999,6 +1005,7 @@ AddNewBirthCohortEvent<-function(StudyObj) {
         NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
         DebugPrint(paste0("Create new birth cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
         NewChildCohort$RandomizationProbabilities<-Cohort$UpdateProbabilities #Use the latest probabilities from previous birth cohort
+        NewChildCohort$UnWeightedRandomizationProbabilities<-Cohort$UnWeightedUpdateProbabilities
         StudyObj$CohortList[[(length(StudyObj$CohortList)+1)]]<-NewChildCohort
         break
       }
