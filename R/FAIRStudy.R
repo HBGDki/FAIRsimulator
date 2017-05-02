@@ -262,29 +262,19 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     #DebugPrint(paste0("Estimated treatment effect in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
     #DebugPrint(lmecoef,1,StudyObj)
     
-    probs<-GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,StudyObj$StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+    probs <- GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,
+                                              StudyObj$StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+    
+
+    ## Apply any probabiity temperation function, e.g. sqrt
+    probs <- StudyObj$StudyDesignSettings$probTemperation(probs)
+    
     nonupdateprobs<-probs #Save the not updated probs for statistics
-    #print(probs)
-    
-    #Update probabilitites to keep pre-defined portions 
-    
-    # # define a function to update probabilities to honor the minimum allocation probabilities
-    # updateProbs <- function(probs,Cohort) {
-    #   probs[Cohort$MinAllocationProbabilities!=0]<-Cohort$MinAllocationProbabilities[Cohort$MinAllocationProbabilities!=0]
-    #   probspresum<-sum(probs[Cohort$MinAllocationProbabilities!=0])
-    #   probssum<-sum(probs[Cohort$MinAllocationProbabilities==0])
-    #   probs[Cohort$MinAllocationProbabilities==0]<-(1-probspresum)*probs[Cohort$MinAllocationProbabilities==0]/probssum
-    #   DebugPrint(paste0("Recalculated randomization probabilities in ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
-    #   #print(probs)
-    #   return(probs)
-    # }
-    
+
+    ## Adjust the probabilities so that minimum allocation is honored
     probs <- updateProbs(StudyObj,probs,Cohort)
     
-    #updateProbs(indPerTreatment$newProbs,Cohort)
     ###Futility - returns prob 0 for futile treatments
-    
-    # browser()
     probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
 
     Cohort$UpdateProbabilities<-probs #The latest probability updates
@@ -1287,3 +1277,25 @@ plotProbs <- function(StudyObj,...) {
   return(invisible(retVal))
 }
 
+#' probTemperation
+#'
+#' This funciton is called after each update of the probabilities. It is a placeholder for a function that makes the randomization updates less drastic. 
+#' The default function does nothing to teh probabilities.
+#' @param probs The current set of probabilities.
+#'
+#' @return A set of probabilities
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' probTemperation(probs) # Default. Will give back the same probabilties.
+#' probTemperation <- function(probs) {
+#'      probs <- sqrt(probs)/sum(sqrt(probs))
+#'      return(probs)
+#'}
+#' probTemperation(probs) # Will now give back the less dramatic square rooted probabilities.
+#' }
+probTemperation <- function(probs) {
+  probs <- sqrt(probs)/sum(sqrt(probs))
+  return(probs)
+}
