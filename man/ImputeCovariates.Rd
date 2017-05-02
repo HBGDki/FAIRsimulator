@@ -4,20 +4,24 @@
 \alias{ImputeCovariates}
 \title{ImputeCovariates}
 \usage{
-ImputeCovariates(df, StudyObj, strIDVariable = "ID")
+ImputeCovariates(df, StudyObj, strIDVariable = "ID", method = c("pmm",
+  "median"))
 }
 \arguments{
 \item{df}{A \code{data.frame} in which to impute missing covariate values.}
 
 \item{StudyObj}{A FAIRsimulator \code{study} object}
 
-\item{strID}{A string with the name of the columns in \code{df} containing the subject identifiers.}
+\item{strIDVariable}{A string with the name of the columns in \code{df} containing the subject identifiers.}
+
+\item{method}{A string identifying the imputation method. Current implemented methods are 
+\code{method = "pmm"} (default) and \code{method = "median"}.}
 }
 \value{
 A \code{data.frame} with all missing covariates imputed.
 }
 \description{
-Impute covariate - simple median imputation per individual (strIDVariable) of data frame (without correlation) of covariates in covariates vector.
+Single imputation of covariates by two methods: predictive mean matching and median imputation. Predictive mean matching (default) aggregates the variable to the child level, imputes the covariates by predictive mean matching, and expands the result to all observations per individual (\code{strIDVariable}). This method accounts for the correlations between the variables. Median imputation imputes the median imputation per individual of data frame (without correlation) of covariates in covariates vector.
 }
 \examples{
 \dontrun{}

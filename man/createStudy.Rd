@@ -20,7 +20,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   Futilityfunction = futilityFunction, debugLevel = 1, studyStopTime = 30
   * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
   "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
-  minSubjects = 5)
+  minSubjects = 5, impMethod = c("pmm", "median"))
 }
 \arguments{
 \item{nCohorts}{The number of cohorts.}
@@ -35,7 +35,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{randomizationProbabilities}{Initial randomization probabilities.}
 
-\item{minAllocationProbabilities}{Minium allocation for each treatment, default 25% allocation for SoC.}
+\item{minAllocationProbabilities}{Minium allocation for each treatment, default 0.25 allocation for SoC.}
 
 \item{treatments}{A list of treatments for each cohort.}
 
@@ -54,6 +54,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 \item{strCovariates}{A vector with the names of the covariates that should be used in the interim analysis.}
 
 \item{currentDate}{The study start date, default = current system date.}
+
+\item{impMethod}{Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.}
 
 \item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
 }

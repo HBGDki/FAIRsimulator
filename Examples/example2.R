@@ -25,9 +25,9 @@ mySimFunction <- function(StudyObjIni) {
   return(StudyObj)
 }
 
-registerDoParallel(cores=2)
+registerDoParallel(cores=4)
 
-myRes <- foreach(i=1:2) %dopar% AdaptiveStudy(StudyObjIni)
+myRes <- foreach(i=1:10) %dopar% AdaptiveStudy(StudyObjIni)
 
 tmp <- map(myRes,getProbData)
 bind_rows(tmp)
