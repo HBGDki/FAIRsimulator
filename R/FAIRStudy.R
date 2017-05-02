@@ -929,11 +929,11 @@ MoveCompletedSubjects<-function(StudyObj) {
           NewChildCohort$ParentCohort<-i #Add a reference to old Cohort as a parent cohort
           NewChildCohort$ProbabilityCohort<-NewCohortLinkIndex #The cohort where to update the probabilities from
           
-          NewChildCohort<-MoveSubjects(Cohort,NewChildCohort,StudyObj)          
+          #NewChildCohort<-MoveSubjects(Cohort,NewChildCohort,StudyObj)          
           
           NewChildCohortList[[length(NewChildCohortList)+1]]<-NewChildCohort
         } else {
-          StudyObj$CohortList[[Cohort$ChildCohort]]<-MoveSubjects(Cohort,StudyObj$CohortList[[Cohort$ChildCohort]],StudyObj)          
+          #StudyObj$CohortList[[Cohort$ChildCohort]]<-MoveSubjects(Cohort,StudyObj$CohortList[[Cohort$ChildCohort]],StudyObj)          
         }       
       }
     }
@@ -945,6 +945,23 @@ MoveCompletedSubjects<-function(StudyObj) {
       }
     }
   }
+  
+  
+  ### Update probabilities from parallell cohorts first then move subjects
+  StudyObj<-UpdateProbabilitiesEvent(StudyObj)
+  
+  #Move subjects
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      ChildCohort<-NULL
+      Cohort<-StudyObj$CohortList[[i]]
+      if (Cohort$Active && !is.null(Cohort$NewCohortLink) && any(lapply(Cohort$SubjectList,function(Subject){return(Subject$Status==2)})==TRUE))  { 
+          #if this is an active cohort with completed subjects and it has a linked cohort
+        StudyObj$CohortList[[Cohort$ChildCohort]]<-MoveSubjects(Cohort,StudyObj$CohortList[[Cohort$ChildCohort]],StudyObj)          
+      }       
+    }
+  }
+  
   return(StudyObj)
 }
 
