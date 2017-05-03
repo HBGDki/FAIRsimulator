@@ -2,7 +2,7 @@
 
 #' createStudy
 #' 
-#' Create an initial study object that represents the study state before it is executed.
+#' @description Create an initial study object that represents the study state before it is executed.
 #'
 #' @param nCohorts The number of cohorts.
 #' @param cohortStartTimes A vector of start times for the different cohorts, in days of study time.
@@ -12,7 +12,7 @@
 #' @param randomizationProbabilities Initial randomization probabilities.
 #' @param recruitmentAges A list of age ranges in which subjects are recruited to each cohort. Each list component should be a vector with the min and max age.
 #' @param debugLevel The debug level. 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing.
-#' @param minAllocationProbabilities Minium allocation for each treatment, default 0.25 allocation for SoC.
+#' @param minAllocationProbabilities Minium allocation for each treatment, default 25% allocation for SoC.
 #' @param treatments A list of treatments for each cohort.
 #' @param effSizes A list of effect sizes for each treatment in each cohort, default effect size per 6 month.
 #' @param newCohortLink A vector of dependencies between cohorts when evolving in age, default Cohort 1 will evolve similar to cohort 2, Cohort 2 will evolve similar to cohort 3, Cohort 3 will not evlove.
@@ -21,7 +21,6 @@
 #' @param latestTimeForNewBirthCohorts The latest time for new birth cohorts to start (in days), default 0 = No new birth cohorts.
 #' @param strCovariates A vector with the names of the covariates that should be used in the interim analysis.
 #' @param currentDate The study start date, default = current system date.
-#' @param impMethod Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.
 #'
 #' @return A FAIRsimulator \code{study} object ready to be executed.
 #' @export
@@ -39,8 +38,7 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         debugLevel=1,studyStopTime=30*28,latestTimeForNewBirthCohorts=0,
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
                         currentDate = Sys.Date(),
-                        minSubjects = 5,
-                        impMethod = c("pmm", "median")) {
+                        minSubjects = 5) {
   
   ## Create the study design setting list ##
   
@@ -89,10 +87,6 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   
   # The minimum number of subjects per treatment for futility
   StudyDesignSettings$MinimumNumberofSubjects  <- minSubjects
-  
-  # Set the imputation method
-  StudyDesignSettings$ImpMethod  <- match.arg(impMethod)
-  
   
   ## Create the study object ##
   StudyObj <- list()

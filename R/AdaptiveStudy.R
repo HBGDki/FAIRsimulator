@@ -12,7 +12,7 @@
 #' }
 AdaptiveStudy<-function(StudyObj){
   
-  StudyObj<-InitEvent(StudyObj) #Initialize the study object
+  StudyObj<-StudyObj$InitEvent(StudyObj) #More thing to intialize before the loop starts
 
   while (StudyObj$StopEvent(StudyObj)==FALSE) { #Start the study
     
