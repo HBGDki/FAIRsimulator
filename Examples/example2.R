@@ -8,6 +8,11 @@ library(purrr)
 set.seed(32423)
 
 
+probTemperation <- function(probs) {
+  probs <- sqrt(probs)/sum(sqrt(probs))
+  return(probs)
+}
+
 StudyObjIni <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32*30,
                         nSubjects = c(320,320,320),
                         randomizationProbabilities = list(rep(0.20,5),rep(0.20,5),rep(0.20,5)),
@@ -16,18 +21,14 @@ StudyObjIni <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
                         Recruitmentfunction=function(...) {return(5000)},
-                        minSubjects = 10)
+                        minSubjects = 10,
+                        probTemperationFunction = probTemperation)
 
 
 
-mySimFunction <- function(StudyObjIni) {
-  StudyObj<-AdaptiveStudy(StudyObjIni)
-  return(StudyObj)
-}
+registerDoParallel(cores=6)
 
-registerDoParallel(cores=4)
-
-myRes <- foreach(i=1:10) %dopar% AdaptiveStudy(StudyObjIni)
+myRes <- foreach(i=1:12) %dopar% AdaptiveStudy(StudyObjIni)
 
 tmp <- map(myRes,getProbData)
 bind_rows(tmp)
