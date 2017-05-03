@@ -229,15 +229,17 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     df[df==-99]<-NA #Set -99 to missing
     df<-ImputeCovariates(df,StudyObj,method=StudyObj$StudyDesignSettings$ImpMethod) #Impute missgin covariates
     
+    #Sort to get correct TRT order
+    df <- df[order(df["TRT"],df["ID"], df["AGE"]),] 
+    
     ##### Make some covariate factors
-    df$TRT<-as.factor(df$TRT)
+    df$TRT<-as.factor(df$TRT) 
     df$SEXN<-as.factor(df$SEXN)
     df$SANITATN<-as.factor(df$SANITATN)
     df$AGE<-df$AGE/(12*30) #Rescale time to years
     
     #### Perform LME estimation based on some covariates and treatment effects for each cohort
     lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
-    
     ##### Calculate new probabilites based on another cohort LME results
     lmecoef<-summary(lmefit)$coefficients[,1] #Get coefficicents from LME
     lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
@@ -650,7 +652,7 @@ RecruitmentEvent<-function(StudyObj) { #´
 #' @param Subject A FAIRsimulator \code{individual} object.
 #' @param time The time of the HAZ observation
 #' @param effecttime The effecttime
-#' @param cumeffect Should the effect be cumulative to previus cohorts.
+#' @param cumeffect Should the effect be cumulative to previous cohorts.
 #'
 #' @return
 #' @export
@@ -680,7 +682,6 @@ AddEffect<-function(y,StudyObj,Subject,time,effecttime=6*30,cumeffect=NULL) {
 #' @examples
 SimulateHAZ<-function(StudyObj,Subject,time,age) {
   DebugPrint(paste0("Simulate HAZ for subject ",Subject$StudyID," at study time: ",StudyObj$CurrentTime," (sample time = ",time,")"),4,StudyObj)
-
   res_err<-mvrnorm(n = length(age), 0, StudyObj$sig , tol = 1e-6, empirical = FALSE, EISPACK = FALSE) #Simulate residual error on HAZ
   y <-  StudyObj$calcHAZVector(age = age/(30*12),basethetas = StudyObj$thbasevector,covthetas = Subject$FREMCoeff,etas = Subject$IndSamples) #Calculate Y without residual error
   yres<-y+res_err #Add residual error
@@ -797,7 +798,6 @@ MoveSubjects<-function(FromCohort,ToCohort,StudyObj) { #
   }
   if (!is.null(fromids)) {
     for (i in 1:length(fromids)) {
-      if (fromstatus[i]==2 && !(fromids[i] %in% toids)) { #If this subject is completed and not already moved
         DebugPrint(paste0("Moving subject ",fromids[i]," from cohort ",FromCohort$Name," to cohort ",ToCohort$Name," at study time: ",StudyObj$CurrentTime),3,StudyObj)
         Subject<-FromCohort$SubjectList[[i]] #Get the subject
         #### Update the subject with the ToChort information......
@@ -1078,7 +1078,7 @@ InitEvent <- function(StudyObj) {
 
   StudyObj$thbasevector <- as.numeric(dfext[2:(noBaseThetas+1)])
   StudyObj$sig     <- as.numeric(dfext[noBaseThetas+2+noCovThetas]) #Get the additive residual error (variance)
-
+  
   return(StudyObj)
 }
 
