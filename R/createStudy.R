@@ -21,7 +21,19 @@
 #' @param latestTimeForNewBirthCohorts The latest time for new birth cohorts to start (in days), default 0 = No new birth cohorts.
 #' @param strCovariates A vector with the names of the covariates that should be used in the interim analysis.
 #' @param currentDate The study start date, default = current system date.
-#'
+#' @param impMethod Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.
+#' @param InitEvent Init event funciton
+#' @param StudyIncrementEventFunction Study increment event function
+#' @param StopEventFunction Stop event function
+#' @param AddCohortEventFunction = Add cohort event function
+#' @param DropoutEventFunction = Dropout event function
+#' @param RecruitmentEventFunction = Recruitment event function
+#' @param SimulateDataEventFunction = Simulate data event function
+#' @param MoveCompletedSubjectsFunction = Move completed subjects function
+#' @param AnalyzeDataEventFunction = Analyze data event function 
+#' @param UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
+#' @param AddNewBirthCohortEventFunction Add new birth cohort event function
+#' @param probTemperationFunction Fucntion for modifying probabilities, e.g. to be less dramatic
 #' @return A FAIRsimulator \code{study} object ready to be executed.
 #' @export
 #'
@@ -38,8 +50,21 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         debugLevel=1,studyStopTime=30*28,latestTimeForNewBirthCohorts=0,
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
                         currentDate = Sys.Date(),
-                        minSubjects = 5) {
-  
+                        minSubjects = 5,
+                        impMethod = c("pmm", "median"),
+                        InitEventFunction           = InitEvent,
+                        StudyIncrementEventFunction = StudyIncrementEvent,
+                        StopEventFunction = StopEvent,
+                        AddCohortEventFunction = AddCohortEvent,
+                        DropoutEventFunction = DropoutEvent,
+                        RecruitmentEventFunction = RecruitmentEvent,
+                        SimulateDataEventFunction = SimulateDataEvent, 
+                        MoveCompletedSubjectsFunction = MoveCompletedSubjects,
+                        AnalyzeDataEventFunction = AnalyzeDataEvent, 
+                        UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
+                        AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
+                        probTemperationFunction = probTemperation) {
+
   ## Create the study design setting list ##
   
   StudyDesignSettings                            <- list()
@@ -88,6 +113,12 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   # The minimum number of subjects per treatment for futility
   StudyDesignSettings$MinimumNumberofSubjects  <- minSubjects
   
+  # Set the imputation method
+  StudyDesignSettings$ImpMethod  <- match.arg(impMethod)
+  
+  # Function to modify the unweighted ranndomization probabilities
+  StudyDesignSettings$probTemperation <- probTemperationFunction
+  
   ## Create the study object ##
   StudyObj <- list()
   
@@ -101,23 +132,23 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   StudyObj$Futilityfunction    <- Futilityfunction
 
   ## Define events
-  StudyObj$InitEvent           <- InitEvent
-  StudyObj$StudyIncrementEvent <- StudyIncrementEvent
-  StudyObj$StopEvent           <- StopEvent
+  StudyObj$InitEvent           <- InitEventFunction
+  StudyObj$StudyIncrementEvent <- StudyIncrementEventFunction
+  StudyObj$StopEvent           <- StopEventFunction
   
   ## Set the debug level
   StudyObj$DebugLevel <- debugLevel # 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing
   
   ## Create the list of Events
   EventList <- list()
-  EventList[[length(EventList)+1]] <- AddCohortEvent #Add the AddCohort event
-  EventList[[length(EventList)+1]] <- DropoutEvent #Dropout event
-  EventList[[length(EventList)+1]] <- RecruitmentEvent #Add the Recruitment event
-  EventList[[length(EventList)+1]] <- SimulateDataEvent #Add a Simulate data event
-  EventList[[length(EventList)+1]] <- MoveCompletedSubjects #Move completed subjects event
-  EventList[[length(EventList)+1]] <- AnalyzeDataEvent #Add a Analyze data event
-  EventList[[length(EventList)+1]] <- UpdateProbabilitiesEvent #Update all probabilities, even for non directly connected cohorts
-  EventList[[length(EventList)+1]] <- AddNewBirthCohortEvent #Add a new birth cohort
+  EventList[[length(EventList)+1]] <- AddCohortEventFunction #Add the AddCohort event
+  EventList[[length(EventList)+1]] <- DropoutEventFunction #Dropout event
+  EventList[[length(EventList)+1]] <- RecruitmentEventFunction #Add the Recruitment event
+  EventList[[length(EventList)+1]] <- SimulateDataEventFunction #Add a Simulate data event
+  EventList[[length(EventList)+1]] <- MoveCompletedSubjectsFunction #Move completed subjects event
+  EventList[[length(EventList)+1]] <- AnalyzeDataEventFunction #Add a Analyze data event
+  EventList[[length(EventList)+1]] <- UpdateProbabilitiesEventFunction #Update all probabilities, even for non directly connected cohorts
+  EventList[[length(EventList)+1]] <- AddNewBirthCohortEventFunction #Add a new birth cohort
   
   StudyObj$EventList           <- EventList
   StudyObj$StudyDesignSettings <- StudyDesignSettings #Add the specific study design settings into the Study object
