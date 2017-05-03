@@ -17,7 +17,7 @@ AddEffect(y, StudyObj, Subject, time, effecttime = 6 * 30, cumeffect = NULL)
 
 \item{effecttime}{The effecttime}
 
-\item{cumeffect}{Should the effect be cumulative to previus cohorts.}
+\item{cumeffect}{Should the effect be cumulative to previous cohorts.}
 }
 \description{
 Add a treatment effect to a HAZ value
