@@ -199,9 +199,10 @@ GetCohortData<-function(Cohort,StudyObj) {
     dflist<-lapply(Cohort$SubjectList,function(Subject){
       dfr<-data.frame()
       if (!is.null(Subject$Data)) {
-        for (i in 1:length(Subject$Data)) {
-          dfr<-rbind(dfr,data.frame(ID=Subject$StudyID,DATA=Subject$Data[[i]],AGE=Subject$SampleAge[[i]],TRT=Subject$TreatmentIndex,TRTS=Subject$Treatment,Subject$Covariates))
-        }
+        suppressWarnings(dfr<-data.frame(ID=Subject$StudyID,DATA=Subject$Data,AGE=Subject$SampleAge,TRT=Subject$TreatmentIndex,TRTS=Subject$Treatment,Subject$Covariates))
+        #for (i in 1:length(Subject$Data)) {
+        #  dfr<-rbind(dfr,data.frame(ID=Subject$StudyID,DATA=Subject$Data[[i]],AGE=Subject$SampleAge[[i]],TRT=Subject$TreatmentIndex,TRTS=Subject$Treatment,Subject$Covariates))
+        #}
       }
       return(dfr)
     })
