@@ -275,19 +275,10 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
 
     ## Adjust the probabilities so that minimum allocation is honored
     probs <- updateProbs(StudyObj,probs,Cohort)
-    print(probs)
-    print(nonupdateprobs)
- 
-    
+
     ###Futility - returns prob 0 for futile treatments
     probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
-    if (any(is.nan(probs))) {
-      browser()
-      print(nonupdateprobs)
-      print(probs)
-    }
-    
-    
+
     Cohort$UpdateProbabilities<-probs #The latest probability updates
     Cohort$UnWeightedUpdateProbabilities<-nonupdateprobs #The latest probability updates
     
