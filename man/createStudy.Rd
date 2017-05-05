@@ -20,7 +20,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   Futilityfunction = futilityFunction, debugLevel = 1, studyStopTime = 30
   * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
   "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
-  minSubjects = 5, impMethod = c("pmm", "median"),
+  minFutilityProb = 0.1, impMethod = c("pmm", "median"),
   InitEventFunction = InitEvent,
   StudyIncrementEventFunction = StudyIncrementEvent,
   StopEventFunction = StopEvent, AddCohortEventFunction = AddCohortEvent,

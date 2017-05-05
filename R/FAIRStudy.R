@@ -1088,28 +1088,8 @@ InitEvent <- function(StudyObj) {
 #' @export
 #'
 #' @examples
-futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignSettings$MinimumNumberofSubjects) {
-  
-  tmp <- 
-    getItemsFromSubjects(Cohort) %>%  # Get all subject data from Cohort
-    filter(CurrentCohortTime >= Cohort$CurrentTime) %>% # Select the non-dropped subjects
-    group_by(Treatment) %>% distinct(StudyID) %>%  # group by Treatment and select the IDs 
-    tally    # Cound the number of individuals per Treatment
-  ## Now we need to check if the number treatments in the data is correct or if we need to add rows
-  trts <- Cohort$Treatments
-  if(length(trts) > nrow(tmp)) {
-    ndf <- data.frame(Treatment = trts[!(trts %in% tmp$Treatment)],n=0)
-    tmp <- bind_rows(tmp,ndf)
-  }
-  
-  indPerTreatment <-  tmp %>% 
-    mutate(Treatment = factor(.$Treatment,levels=trts)) %>% # Make Treatment a factor so it can be ordered
-    arrange(Treatment) %>% # Sort the treatment so the order correspond to probs
-    mutate(probs = probs,N = n*probs) %>% # Compute the expected number of subjects per treatment given the current probabilities
-    mutate(newProbs = ifelse(N<minSubj,0,probs)) # Create new probabilities by setting some to zero based on criteria
-  
-  probs <- updateProbs(StudyObj,indPerTreatment$newProbs,Cohort)
-  
+futilityFunction <- function(probs,Cohort,StudyObj,minFutProb=StudyObj$StudyDesignSettings$MinimumFutilityProbability) {
+  probs <- updateProbs(StudyObj,ifelse(probs<=minFutProb,0,probs),Cohort)
   return(probs)
 }
 
@@ -1161,6 +1141,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
   
   resDf1$CohortAge <- cohortAgeNames[resDf1$Level] 
   resDf1$CohortName <- as.character(resDf1$CohortName)
+  resDf1$CohortAge <- factor(resDf1$CohortAge,levels=cohortAgeNames)
   
   return(resDf1)
 }
