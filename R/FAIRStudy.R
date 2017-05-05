@@ -245,7 +245,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
     lmecoef<-lmecoef[regexpr('AGE:TRT.*',names(lmecoef))==1]
     lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
-    
+    print(lmefit)
     if ((length(lmecoef)+1)!=length(Cohort$RandomizationProbabilities)) {
       lmecoefnew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
       lmesenew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
@@ -275,7 +275,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
 
     ## Adjust the probabilities so that minimum allocation is honored
     probs <- updateProbs(StudyObj,probs,Cohort)
-    
+
     ###Futility - returns prob 0 for futile treatments
     probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
 
@@ -383,7 +383,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
   Cohort$CohortStartTime<-StudyObj$CurrentTime #The Cohort start time in relation to the study time
   Cohort$CohortStartDate<-StudyObj$CurrentDate #The Cohort start date
   Cohort$CurrentTime<-0 #The Cohort time
-  Cohort$RecruitmentRateFunction<-RecruitmentRatefunction # The recruitment rate function
+  #Cohort$RecruitmentRateFunction<-RecruitmentRatefunction # The recruitment rate function
   Cohort$RecruitmentRateFunction<-StudyObj$Recruitmentfunction # The recruitment rate function
   if (!is.null(CohortNum)) {
     Cohort$MaxNumberOfSubjects        <- StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
@@ -400,6 +400,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
     Cohort$Name                       <- paste0("C-",CohortNum,"-1 [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
     Cohort$StartNum                   <- CohortNum #The cohort start number
     Cohort$CycleNum                   <- 1 #The cycle number
+    Cohort$Level                      <- which(unlist(StudyObj$StudyDesignSettings$CohortAgeRange)[seq(1,length(StudyObj$StudyDesignSettings$CohortAgeRange)*2,by=2)]==Cohort$RandomizationAgeRange[1])#The relative age level of this cohort, youngest = 1, oldest = length(StudyDesignSettings$CohortAgeRange)
   }
   class(Cohort)<-"cohort"
   return(Cohort)  
@@ -460,6 +461,11 @@ GetTreatmentRandomizations<-function(Num,Cohort,StudyObj) { #Simple uniform rand
   for (i in 1:Num){
     lowprob<-0
     highprob<-0
+    if (any(is.nan(Cohort$RandomizationProbabilities))) {
+      browser()
+      print(paste0("Cohort ",Cohort$Name))
+      print(Cohort$RandomizationProbabilities)
+    }
     for (j in 1:length(Cohort$RandomizationProbabilities)) {
       highprob<-highprob+Cohort$RandomizationProbabilities[[j]]
       if (rnd[i]>=lowprob && rnd[i]<highprob) {
@@ -910,7 +916,7 @@ MoveCompletedSubjects<-function(StudyObj) {
           NewChildCohort$RandomizationAgeRange<-Cohort$RandomizationAgeRange #The age range at randomization for this cohort
           NewChildCohort$DropoutRate<-StudyObj$CohortList[[NewCohortLinkIndex]]$DropoutRate #The dropout rate for this cohort
           NewChildCohort$NewCohortLink<-StudyObj$CohortList[[NewCohortLinkIndex]]$NewCohortLink #The link to another cohort to get the randomization probabilities
-          
+          NewChildCohort$Level<-Cohort$Level+1 #This cohort is moving up one level
           NewChildCohort$Name<-paste0("C-",Cohort$StartNum,"-",Cohort$CycleNum+1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
           NewChildCohort$StartNum<-Cohort$StartNum #The Cohort starting number
           NewChildCohort$CycleNum<-Cohort$CycleNum+1 #The Cohort cycle number
@@ -982,19 +988,14 @@ UpdateProbabilitiesEvent<-function(StudyObj) {
       if (!is.null(linkedcohorts)) {
         j<-max(linkedcohorts)
         Cohortj<-StudyObj$CohortList[[j]]
-        if (any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities)) {
+        if (!is.null(Cohortj$UpdateProbabilities) && any(Cohorti$RandomizationProbabilities!=Cohortj$UpdateProbabilities)) {
           DebugPrint(paste0("Updating probabilities in ",Cohorti$Name," based on probabilities in ",Cohortj$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
           RandProbs<-list() #Save previous randomization probabilities on cohort
           RandProbs$CohortTime<-StudyObj$CohortList[[i]]$CurrentTime #The time until the probability was valid
           RandProbs$StudyTime<-StudyObj$CurrentTime
           RandProbs$FromCohort<-j
           RandProbs$RandomizationProbabilities<-StudyObj$CohortList[[i]]$RandomizationProbabilities
-#          if (!is.null(StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities)) {
-            RandProbs$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities
- #         } else {
-          #  RandProbs$RandomizationProbabilities
-  #        }
-            
+          RandProbs$UnWeightedRandomizationProbabilities<-StudyObj$CohortList[[i]]$UnWeightedRandomizationProbabilities
           RandProbs$Treatments<-StudyObj$CohortList[[i]]$Treatments
           StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities[[length(StudyObj$CohortList[[i]]$PreviousRandomizationProbabilities)+1]]<-RandProbs
           StudyObj$CohortList[[i]]$RandomizationProbabilities<-Cohortj$UpdateProbabilities #Update the probabilities for the parallell cohort
@@ -1026,6 +1027,7 @@ AddNewBirthCohortEvent<-function(StudyObj) {
       {
         BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==0}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
         NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)
+        browser()
         NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
         NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
         DebugPrint(paste0("Create new birth cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
@@ -1094,7 +1096,6 @@ futilityFunction <- function(probs,Cohort,StudyObj,minSubj=StudyObj$StudyDesignS
     filter(CurrentCohortTime >= Cohort$CurrentTime) %>% # Select the non-dropped subjects
     group_by(Treatment) %>% distinct(StudyID) %>%  # group by Treatment and select the IDs 
     tally    # Cound the number of individuals per Treatment
-  
   ## Now we need to check if the number treatments in the data is correct or if we need to add rows
   trts <- Cohort$Treatments
   if(length(trts) > nrow(tmp)) {
@@ -1140,12 +1141,12 @@ updateProbs <- function(StudyObj,probs,Cohort,minProb = Cohort$MinAllocationProb
 
 #' getCohortAgeRange
 #' 
-#' Creates a lookup data .frame with CohortName, Recruitment age range and a Label for the age group. 
+#' Creates a lookup data frame with CohortName, Recruitment age range and a Label for the age group. 
 #'
 #' @param StudyObj A FAIRsimulator \code{study} object
-#' @param cohortAgeNames An optional vecto of labels for the age groups
+#' @param cohortAgeNames An optional vector of labels for the age groups
 #'
-#' @return A data.frame with columns CohortName, AgeRange and CohortAge
+#' @return A data frame with columns CohortName, AgeRange and CohortAge
 #' @export
 #'
 #' @examples
