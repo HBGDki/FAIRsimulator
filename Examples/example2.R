@@ -1,12 +1,14 @@
 ## This example simulates the same design multiple times in parallel.
 
 library(FAIRsimulator)
-library(foreach)
-library(doParallel)
-library(purrr)
 
 set.seed(32423)
 
+
+probTemperation <- function(probs) {
+  probs <- sqrt(probs)/sum(sqrt(probs))
+  return(probs)
+}
 
 StudyObjIni <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32*30,
                         nSubjects = c(320,320,320),
@@ -16,24 +18,18 @@ StudyObjIni <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
                         Recruitmentfunction=function(...) {return(5000)},
-                        minSubjects = 10)
+                        minSubjects = 10,
+                        probTemperationFunction = probTemperation)
 
 
+iter   <- 7
+ncores <- 7
 
-mySimFunction <- function(StudyObjIni) {
-  StudyObj<-AdaptiveStudy(StudyObjIni)
-  return(StudyObj)
-}
+system.time(myMultStud <- runMultiSim(StudyOnjIni,iter=iter,ncores=ncores))
 
-registerDoParallel(cores=4)
+probDf           <- myMultStud[[2]]  # The Randomization probabilities
+probDfUnweighted <- getMultiProbList(myMultStud[[1]],ncores=ncores,strProb="UnWeightedRandomizationProbabilities")  # The UnweightedRandomization probabilities
 
-myRes <- foreach(i=1:10) %dopar% AdaptiveStudy(StudyObjIni)
+plotMultiProb(probDf)
+plotMultiProb(probDfUnweighted,ylb="Unweighted randomization probabilities")
 
-tmp <- map(myRes,getProbData)
-bind_rows(tmp)
-
-## Extract the probabilities used in the plotProbs plot above.
-
-
-
-tmp <- getProbData(StudyObj)
