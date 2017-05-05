@@ -50,7 +50,7 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         debugLevel=1,studyStopTime=30*28,latestTimeForNewBirthCohorts=0,
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
                         currentDate = Sys.Date(),
-                        minSubjects = 5,
+                        minFutilityProb = 0.1,
                         impMethod = c("pmm", "median"),
                         InitEventFunction           = InitEvent,
                         StudyIncrementEventFunction = StudyIncrementEvent,
@@ -111,7 +111,8 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   StudyDesignSettings$CurrentID  <- 1 
   
   # The minimum number of subjects per treatment for futility
-  StudyDesignSettings$MinimumNumberofSubjects  <- minSubjects
+  if(any(minFutilityProb > unlist(minAllocationProbabilities)[unlist(minAllocationProbabilities) != 0])) stop("Minimum futility probability is larger than one ore more minimum allocation probabilities.")
+  StudyDesignSettings$MinimumFutilityProbability  <- minFutilityProb
   
   # Set the imputation method
   StudyDesignSettings$ImpMethod  <- match.arg(impMethod)

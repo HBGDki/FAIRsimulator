@@ -5,7 +5,7 @@
 \title{futilityFunction}
 \usage{
 futilityFunction(probs, Cohort, StudyObj,
-  minSubj = StudyObj$StudyDesignSettings$MinimumNumberofSubjects)
+  minFutProb = StudyObj$StudyDesignSettings$MinimumFutilityProbability)
 }
 \arguments{
 \item{probs}{The current randomization probabilities after having taken the minimum randomisation probabilities into account.}
