@@ -10,13 +10,13 @@ getCohortAgeRange(StudyObj, cohortAgeNames = c("0-6 months", "6-12 months",
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object}
 
-\item{cohortAgeNames}{An optional vecto of labels for the age groups}
+\item{cohortAgeNames}{An optional vector of labels for the age groups}
 }
 \value{
-A data.frame with columns CohortName, AgeRange and CohortAge
+A data frame with columns CohortName, AgeRange and CohortAge
 }
 \description{
-Creates a lookup data .frame with CohortName, Recruitment age range and a Label for the age group.
+Creates a lookup data frame with CohortName, Recruitment age range and a Label for the age group.
 }
 \examples{
 \dontrun{

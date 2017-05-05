@@ -1027,7 +1027,6 @@ AddNewBirthCohortEvent<-function(StudyObj) {
       {
         BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==0}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
         NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)
-        browser()
         NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
         NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
         DebugPrint(paste0("Create new birth cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
@@ -1155,37 +1154,15 @@ updateProbs <- function(StudyObj,probs,Cohort,minProb = Cohort$MinAllocationProb
 #' }
 getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 months","12-18 months")) {
   
-  allData <- getAllSubjectData(StudyObj)
-  AgeRanges <- StudyObj$StudyDesignSettings$CohortAgeRange
-  
   myCohorts <- cohorts(StudyObj)
   
-  resDf <- data.frame()
-  for (i in 1:length(myCohorts))  {
-    Cohort <- myCohorts[[i]]
-    for (j in 1:length(AgeRanges)) {
-      if (AgeRanges[[j]][1] == Cohort$RandomizationAgeRange[1] && AgeRanges[[j]][2] == Cohort$RandomizationAgeRange[2]) {
-        resDf[i,"CohortName"] <- Cohort$Name
-        resDf[i,"AgeRange"]   <- paste0(AgeRanges[[j+Cohort$CycleNum-1]][1]/30, "-",AgeRanges[[j+Cohort$CycleNum-1]][2]/30," month")
-        resDf[i,"MinAge"]     <-  AgeRanges[[j+Cohort$CycleNum-1]][1]/30
-      }
-    }
-  }
+  resDf1 <- data.frame(CohortName = names(myCohorts %listmap% "Level"),
+                       Level = myCohorts %listmap% "Level")
   
-  resDf$CohortAge <- resDf$AgeRange
-  if(!is.null(cohortAgeNames)) {
-    
-    minAges <- sort(unique(resDf$MinAge))
-    if(length(minAges) != length(cohortAgeNames)) stop("The number of ages in StudyObj should be the same as cohortageNames.")
-    
-    for(i in 1:length(minAges)) {
-      resDf$CohortAge <- ifelse(resDf$MinAge == minAges[i], cohortAgeNames[i],resDf$CohortAge)
-    }
-  }
+  resDf1$CohortAge <- cohortAgeNames[resDf1$Level] 
+  resDf1$CohortName <- as.character(resDf1$CohortName)
   
-  resDf <- resDf %>% select(-MinAge)  %>% mutate(CohortAge = factor(CohortAge,levels=cohortAgeNames))
-  
-  return(resDf)
+  return(resDf1)
 }
 
 #' getProbData
