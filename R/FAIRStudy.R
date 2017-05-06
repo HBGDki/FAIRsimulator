@@ -273,12 +273,19 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     
     nonupdateprobs<-probs #Save the not updated probs for statistics
 
+    ### Futility - returns prob 0 for futile treatments
+    if(StudyObj$StudyDesignSettings$CheckFutility == "before") {
+      probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    }
+    
     ## Adjust the probabilities so that minimum allocation is honored
     probs <- updateProbs(StudyObj,probs,Cohort)
 
-    ###Futility - returns prob 0 for futile treatments
-    probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
-
+    ### Futility - returns prob 0 for futile treatments
+    if(StudyObj$StudyDesignSettings$CheckFutility == "after") {
+      probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    }
+    
     Cohort$UpdateProbabilities<-probs #The latest probability updates
     Cohort$UnWeightedUpdateProbabilities<-nonupdateprobs #The latest probability updates
     

@@ -20,8 +20,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   Futilityfunction = futilityFunction, debugLevel = 1, studyStopTime = 30
   * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
   "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
-  minFutilityProb = 0.1, impMethod = c("pmm", "median"),
-  InitEventFunction = InitEvent,
+  minFutilityProb = 0.1, checkFutility = c("before", "after"),
+  impMethod = c("pmm", "median"), InitEventFunction = InitEvent,
   StudyIncrementEventFunction = StudyIncrementEvent,
   StopEventFunction = StopEvent, AddCohortEventFunction = AddCohortEvent,
   DropoutEventFunction = DropoutEvent,
@@ -46,7 +46,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{randomizationProbabilities}{Initial randomization probabilities.}
 
-\item{minAllocationProbabilities}{Minium allocation for each treatment, default 25% allocation for SoC.}
+\item{minAllocationProbabilities}{Minium allocation for each treatment, default 0.25 allocation for SoC and 0 for the other treatments.}
 
 \item{treatments}{A list of treatments for each cohort.}
 
@@ -65,6 +65,10 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 \item{strCovariates}{A vector with the names of the covariates that should be used in the interim analysis.}
 
 \item{currentDate}{The study start date, default = current system date.}
+
+\item{minFutilityProb}{The probability below which a treatment is regarded as futile.}
+
+\item{checkFutility}{If futility should be checked before or after taking minimum allocation into account. Default is 'before. Possible values are 'before' and 'after'.}
 
 \item{impMethod}{Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.}
 
@@ -99,5 +103,9 @@ A FAIRsimulator \code{study} object ready to be executed.
 }
 \description{
 Create an initial study object that represents the study state before it is executed.
+}
+\examples{
+\dontrun{
+}
 }
 

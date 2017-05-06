@@ -12,7 +12,7 @@
 #' @param randomizationProbabilities Initial randomization probabilities.
 #' @param recruitmentAges A list of age ranges in which subjects are recruited to each cohort. Each list component should be a vector with the min and max age.
 #' @param debugLevel The debug level. 4=Extreme output, #3=Print everything important, 2=Print events, 1=Sparse print, 0=Print nothing.
-#' @param minAllocationProbabilities Minium allocation for each treatment, default 25% allocation for SoC.
+#' @param minAllocationProbabilities Minium allocation for each treatment, default 0.25 allocation for SoC and 0 for the other treatments.
 #' @param treatments A list of treatments for each cohort.
 #' @param effSizes A list of effect sizes for each treatment in each cohort, default effect size per 6 month.
 #' @param newCohortLink A vector of dependencies between cohorts when evolving in age, default Cohort 1 will evolve similar to cohort 2, Cohort 2 will evolve similar to cohort 3, Cohort 3 will not evlove.
@@ -23,6 +23,8 @@
 #' @param currentDate The study start date, default = current system date.
 #' @param impMethod Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.
 #' @param InitEvent Init event funciton
+#' @param checkFutility If futility should be checked before or after taking minimum allocation into account. Default is 'before. Possible values are 'before' and 'after'.
+#' @param minFutilityProb The probability below which a treatment is regarded as futile.
 #' @param StudyIncrementEventFunction Study increment event function
 #' @param StopEventFunction Stop event function
 #' @param AddCohortEventFunction = Add cohort event function
@@ -38,8 +40,14 @@
 #' @export
 #'
 #' @examples
-createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesign = list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6)*30),nSubjects = c(320,320,320),
-                        dropoutRates = c(0.2/(6*30),0.2/(6*30),0.2/(6*30)),randomizationProbabilities = list(c(0.25,0.25,0.25,0.25),c(0.25,0.25,0.25,0.25),c(0.25,0.25,0.25,0.25)),
+#' \dontrun{
+#' }
+createStudy <- function(nCohorts = 3, 
+                        cohortStartTimes = c(2,1,0), 
+                        samplingDesign = list(c(0,1,2,3,4,5,6)*30,c(0/30,3,6)*30,c(0/30,3,6)*30),
+                        nSubjects = c(320,320,320),
+                        dropoutRates = c(0.2/(6*30),0.2/(6*30),0.2/(6*30)),
+                        randomizationProbabilities = list(c(0.25,0.25,0.25,0.25),c(0.25,0.25,0.25,0.25),c(0.25,0.25,0.25,0.25)),
                         minAllocationProbabilities = list(c(0.25,0,0,0),c(0.25,0,0,0),c(0.25,0,0,0)),
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3"),c("SoC-2","TRT-4","TRT-5","TRT-6"),c("SoC-3","TRT-7","TRT-8","TRT-9")),
                         effSizes = list(c(0,0.05,0.1,0.25),c(0,0,0.05,0.25),c(0,0.05,0.25,0.3)),
@@ -51,6 +59,7 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
                         strCovariates=c("BIRTHWT","MAGE","MHTCM","SEXN","SANITATN"),
                         currentDate = Sys.Date(),
                         minFutilityProb = 0.1,
+                        checkFutility = c("before","after"),
                         impMethod = c("pmm", "median"),
                         InitEventFunction           = InitEvent,
                         StudyIncrementEventFunction = StudyIncrementEvent,
@@ -113,6 +122,9 @@ createStudy <- function(nCohorts = 3, cohortStartTimes = c(2,1,0), samplingDesig
   # The minimum number of subjects per treatment for futility
   if(any(minFutilityProb > unlist(minAllocationProbabilities)[unlist(minAllocationProbabilities) != 0])) stop("Minimum futility probability is larger than one ore more minimum allocation probabilities.")
   StudyDesignSettings$MinimumFutilityProbability  <- minFutilityProb
+  
+  ## Determine when the futility is checked, before or after the probabilities are adjusted for minimum allocation prob
+  StudyDesignSettings$CheckFutility  <- match.arg(checkFutility)
   
   # Set the imputation method
   StudyDesignSettings$ImpMethod  <- match.arg(impMethod)
