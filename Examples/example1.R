@@ -1,4 +1,4 @@
-## This example simulates 
+## This example simulates a three age cohort design
 
 library(FAIRsimulator)
 
@@ -17,7 +17,6 @@ StudyObj <- createStudy(latestTimeForNewBirthCohorts=18*30,studyStopTime = 32*30
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
                         Recruitmentfunction=function(...) {return(5000)},
-                        minSubjects = 10,
                         probTemperationFunction = probTemperation)
 
 

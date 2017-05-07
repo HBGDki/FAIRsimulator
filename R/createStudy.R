@@ -35,7 +35,7 @@
 #' @param AnalyzeDataEventFunction = Analyze data event function 
 #' @param UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
 #' @param AddNewBirthCohortEventFunction Add new birth cohort event function
-#' @param probTemperationFunction Fucntion for modifying probabilities, e.g. to be less dramatic
+#' @param probTemperationFunction Fucntion for modifying probabilities, e.g. to be less dramatic. The default is to have no probability temperation.
 #' @return A FAIRsimulator \code{study} object ready to be executed.
 #' @export
 #'
