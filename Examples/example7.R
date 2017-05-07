@@ -1,6 +1,6 @@
-## This example simulates one cohort with a relatively slow recruitment and a large number of subjects.
+## Simulates 2 cohorts with the same recruitment age but with start times 0 and 6 months. The second cohort have its randomization probabilities udpated based on the first cohort.
 
-## It doesn't work right now, but the aim is to have an interim analysis after 6 months and then recruit all subsequent subjects acording to these probabilities.
+## It doesn't work right now.
 
 library(FAIRsimulator)
 
@@ -9,6 +9,8 @@ set.seed(324124)
 StudyObj <- createStudy(
   nCohorts = 2,
   latestTimeForNewBirthCohorts=7*30,
+  cohortStartTimes = c(7*30+1,0),
+  newCohortLink = list(2,NULL),
   studyStopTime = 24*30,
   nSubjects = c(320,320),
   recruitmentAges = list(c(0,1),c(0,1)),
@@ -19,20 +21,20 @@ StudyObj <- createStudy(
   effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
   Recruitmentfunction=function(...) {return(5000)})
 
-StudyObj <- createStudy(
-  nCohorts = 1,
-  latestTimeForNewBirthCohorts = 0,
-  studyStopTime = 12*30+1,
-  nSubjects = 1000,
-  cohortStartTimes = 0,
-  samplingDesign = list(c(0,1,2,3,4,5,6)*30),
-  randomizationProbabilities = list(rep(0.20,5)),
-  minAllocationProbabilities = list(c(0.2,rep(0,4))),
-  treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4")),
-  effSizes = list(c(0,0.05,0.1,0.15,0.25)),
-  Recruitmentfunction=function(...) {return(10)},
-  newCohortLink = NULL,
-  dropoutRates = rep(0.2/(6*30),3))
+# StudyObj <- createStudy(
+#   nCohorts = 1,
+#   latestTimeForNewBirthCohorts = 0,
+#   studyStopTime = 12*30+1,
+#   nSubjects = 1000,
+#   cohortStartTimes = 0,
+#   samplingDesign = list(c(0,1,2,3,4,5,6)*30),
+#   randomizationProbabilities = list(rep(0.20,5)),
+#   minAllocationProbabilities = list(c(0.2,rep(0,4))),
+#   treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4")),
+#   effSizes = list(c(0,0.05,0.1,0.15,0.25)),
+#   Recruitmentfunction=function(...) {return(10)},
+#   newCohortLink = NULL,
+#   dropoutRates = rep(0.2/(6*30),3))
 
 # #Set residual error to 0
 # StudyObj$InitEvent <- function(StudyObj) {

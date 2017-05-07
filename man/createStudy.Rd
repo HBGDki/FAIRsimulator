@@ -92,7 +92,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 
 \item{AddNewBirthCohortEventFunction}{Add new birth cohort event function}
 
-\item{probTemperationFunction}{Fucntion for modifying probabilities, e.g. to be less dramatic}
+\item{probTemperationFunction}{Fucntion for modifying probabilities, e.g. to be less dramatic. The default is to have no probability temperation.}
 
 \item{RecruitmentFunction}{A function defining the recruitment rate per time unit (default day).}
 
