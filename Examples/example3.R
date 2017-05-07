@@ -1,6 +1,7 @@
-## This example simulates a parallel degiwn with 5 treatments and 3 cohorts all with the same sampling design (montly samples)
-## Immediate recruitment and dropout of 20% for each cohort
-## A final analysis of each cohort is performed at end of study,
+## This example simulates a parallel design with 5 treatments and 3 cohorts all with the same sampling design (monthly samples).
+## Immediate recruitment and dropout of 20% for each cohort.
+## No residual error.
+## A final analysis of each cohort is performed at end of study.
 
 library(FAIRsimulator)
 
@@ -14,7 +15,7 @@ StudyObj <- createStudy(latestTimeForNewBirthCohorts=0,studyStopTime = 6*30+1,
                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
                         Recruitmentfunction=function(...) {return(5000)},
-                        minSubjects = 10,newCohortLink = list(NULL,NULL,NULL),
+                        newCohortLink = list(NULL,NULL,NULL),
                         dropoutRates = rep(0.2/(6*30),3))
 
 #Set residual error to 0
