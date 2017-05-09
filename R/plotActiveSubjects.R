@@ -14,7 +14,7 @@
 #' \dontrun{
 #' plotActiveSubjects(StudyObject)
 #' }
-plotActiveSubjects <- function(StudyObject) {
+plotActiveSubjects <- function(StudyObj) {
   
   indInfo <- extractInclusionData(StudyObj) 
   

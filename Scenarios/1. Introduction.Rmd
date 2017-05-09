@@ -15,7 +15,7 @@ output:
 
 ```{r,message=FALSE, warning=FALSE}
 library(FAIRsimulator)
-set.seed(32423)
+set.seed(3243)
 ```
 
 ## Create the study
@@ -28,7 +28,7 @@ StudyObjIni <- createStudy(
   nSubjects = c(300,300,300),
   Recruitmentfunction=function(...) {return(5000)},
   samplingDesign = list(0:6*30, c(0,3,6)*30, c(0,3,6)*30),
-  studyStopTime = 18*30+1,
+  studyStopTime = 18*30+3,
   latestTimeForNewBirthCohorts=0*30,
   treatments =list(
     c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),
@@ -46,9 +46,9 @@ StudyObjIni <- createStudy(
 * Three groups, 0-6 months, 6-12 months and 12-18 months. 
 * Five possible treatments, including standard of care (SoC), in each age group.
 * Initial randomization will assign 60 subjects to each treatment in an equiprobable fashion. In total 300 subjects per age group.
-* Subjects between 0-1 month, 6-7 months and 12-3 months can be recruited to each of the three age groups, respectively.
+* Subjects between 0-1 month, 6-7 months and 12-13 months can be recruited to each of the three age groups, respectively.
 * Recruitment is assumed instantaneous. 
-* Treatment effects are 0, 0.05, 0.1, 0.15 and 0.25 HAZ improvement over 6 months compared to SoC (the first treatment is assumed to be Soc).
+* Treatment effects are 0, 0.05, 0.1, 0.15 and 0.25 HAZ improvement over 6 months (the first treatment is assumed to be Soc).
 * The youngest age group will have monthly HAZ observations while the two older groups will have bi-monthly HAZ observations.
 * Once all observation in a cohort have been made, the HAZ data from that cohort is analysed using an LME model with treatment group, birth weight, maternal age, maternal height, sex and sanitation facilities as covariates.
 * The estimated treatment effects are used to update the randomization probabilities for new subjects being randomized to the treatments. These probabilities are subject to constraints:
@@ -63,6 +63,7 @@ The above design choices can be changed by the user.
 The study is simulated with the `AdaptiveStudy` function.
 
 ```{r, cache=TRUE}
+
 StudyObj<-AdaptiveStudy(StudyObjIni)
 ```
 
@@ -73,6 +74,12 @@ StudyObj<-AdaptiveStudy(StudyObjIni)
 The `plotStudyCohorts` function provides a  high level picture of the study.
 ```{r}
 plotStudyCohorts(StudyObj)
+```
+
+### The number of subjects remaining
+
+```{r}
+plotActiveSubjects(StudyObj)
 ```
 
 ### The simulated HAZ data
@@ -86,13 +93,13 @@ plotHAZ(StudyObj)
 
 ### The randomization probabilities
 
-The randomization probabilities before any modifications can be visualized with the `plotProbs` function while specifying `strProb="UnWeightedRandomizationProbabilities`.
+The randomization probabilities before any modifications can be visualized with the `plotProbs` function while specifying `strProb="UnWeightedUpdateProbabilities`.
 ```{r,warning=FALSE,message=FALSE,fig.width=12}
-plotProbs(StudyObj,strProb="UnWeightedRandomizationProbabilities")
+plotProbs(StudyObj,strProb="UnWeightedUpdateProbabilities")
 ```
 The probabilities after modifications can also be plotted. The SoC probabilities are reset to 0.2 and TRT-9 and TRT-10 are deemed futile (set to 0). TRT-8 falls below a probability of 0.1. This is because the futility evaluation happens before the probabilities are adjusted to accommodate minimum allocation levels.
 ```{r,warning=FALSE,message=FALSE,fig.width=12}
-plotProbs(StudyObj)
+plotProbs(StudyObj,strProb="UpdateProbabilities")
 ```
 
 # Second example: 
@@ -147,10 +154,11 @@ plotStudyCohorts(StudyObj)
 The unadjusted probabilities:
 
 ```{r,warning=FALSE,message=FALSE,fig.width=12}
-plotProbs(StudyObj,strProb="UnWeightedRandomizationProbabilities")
+plotProbs(StudyObj,strProb="UnWeightedUpdateProbabilities")
 ```
 
 The adjusted probabilities:
 ```{r,warning=FALSE,message=FALSE,fig.width=12}
 plotProbs(StudyObj)
+#plotProbs(StudyObj,strProb="UnWeightedRandomizationProbabilities")
 ```

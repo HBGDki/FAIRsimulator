@@ -4,7 +4,7 @@
 \alias{plotActiveSubjects}
 \title{plotActiveSubjects}
 \usage{
-plotActiveSubjects(StudyObject)
+plotActiveSubjects(StudyObj)
 }
 \arguments{
 \item{StudyObject}{A FAIRsimulator \code{study} object.}

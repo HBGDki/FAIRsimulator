@@ -393,6 +393,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
   Cohort$CurrentTime<-0 #The Cohort time
   #Cohort$RecruitmentRateFunction<-RecruitmentRatefunction # The recruitment rate function
   Cohort$RecruitmentRateFunction<-StudyObj$Recruitmentfunction # The recruitment rate function
+
   if (!is.null(CohortNum)) {
     Cohort$MaxNumberOfSubjects        <- StudyObj$StudyDesignSettings$MaxNumberofSubjects[[CohortNum]] #The maximum number of subject in this cohort
     Cohort$SamplingDesign             <- StudyObj$StudyDesignSettings$SamplingDesigns[[CohortNum]] #The sampling design for this cohort
@@ -1172,7 +1173,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
 #' \dontrun{
 #' probData <- getProbData(StudyObj)
 #' }
-getProbData <- function(StudyObj,strProb="RandomizationProbabilities",...) {
+getProbData <- function(StudyObj,strProb="UpdateProbabilities",...) {
   
   allData <- getAllSubjectData(StudyObj)
   resDf   <- getCohortAgeRange(StudyObj,...)  
@@ -1230,8 +1231,10 @@ plotProbs <- function(StudyObj,...) {
     ylab("Randomization probability") +
     facet_wrap(~CohortAge)
   
-  for(i in 2:length(xs)) {
-    plotList[[i]] <- plotList[[1]] %+% xs[[i]]
+  if(length(xs) > 1) {
+    for(i in 2:length(xs)) {
+      plotList[[i]] <- plotList[[1]] %+% xs[[i]]
+    }
   }
   
   retVal <- plotList 

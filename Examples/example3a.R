@@ -49,11 +49,13 @@ StudyObj$CohortList[[3]]$UpdateCoefficients
 
 getProbData(StudyObj,strProb = "UnWeightedUpdateProbabilities")
 
+
+########
 ## Running the study multiple times to get statistics
-iter   <- 20
+iter   <- 7
 ncores <- 7
 
-system.time(myMultStud <- runMultiSim(StudyOnjIni,iter=iter,ncores=ncores))
+system.time(myMultStud <- runMultiSim(StudyObjIni,iter=iter,ncores=ncores))
 
 probDf           <- myMultStud[[2]]  # The Randomization probabilities
 probDfUnweighted <- getMultiProbList(myMultStud[[1]],ncores=ncores,strProb="UnWeightedUpdateProbabilities")  # The UnweightedRandomization probabilities

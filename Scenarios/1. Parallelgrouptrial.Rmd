@@ -1,0 +1,245 @@
+---
+title: "FAIRsimulator: Parallel study"
+output:
+  html_document: 
+    number_sections: yes
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+      toc_depth: 3
+---
+
+
+```{r,message=FALSE, warning=FALSE}
+library(FAIRsimulator)
+set.seed(32423)
+```
+
+
+# Background
+
+This example will compare two parallel group designs. The first design, the basic design, has 100 subjects per treatment while the alternative design has 200 subjects per treatment arm.
+
+This is a summary of the common features of the two designs:
+
+* Ages: 6-18 months
+* Five treatments: 
+    - SoC, TRT-1, TRT-2, TRT-, TRT-4 and TRT-5
+    - Treatment effecs/6 months: 0.05, 0.1, 0.15, 0.20, 0.25
+* Bi-monthly observations
+* Instantaneous recruitment
+
+# The basic design
+
+## Create the study with the basic design
+
+```{r}
+StudyObjIni <- createStudy(
+  nCohorts = 1,
+  recruitmentAges = list(c(6,7)*30),
+  nSubjects = c(500),
+  cohortStartTimes = c(6*30),
+  newCohortLink = list(NULL),
+  Recruitmentfunction=function(...) {return(5000)},
+  samplingDesign = list(seq(0,12,by=2)*30),
+  studyStopTime = 18*30+1,
+  latestTimeForNewBirthCohorts=6*30,
+  treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4")),
+  effSizes = list(c(0.05,0.1,0.15,0.20,0.25)),
+  randomizationProbabilities = list(rep(0.20,5))
+  )
+```
+
+## Run the study
+
+The study is simulated with the `AdaptiveStudy` function.
+
+```{r, cache=TRUE,results="hide"}
+StudyObj <- AdaptiveStudy(StudyObjIni)
+```
+
+## Visualise the results
+
+### The number of subjects over time
+```{r}
+plotActiveSubjects(StudyObj)
+```
+
+### The simulated HAZ data
+
+The simulated HAZ values can be inspected using the `plotHAZ` function.
+
+```{r}
+plotHAZ(StudyObj)
+```
+
+
+### The treatment effects
+
+```{r}
+plotHAZTreatmentEff(StudyObj)
+```
+
+### The posterior probabilities
+
+The data can be used to update the posterior probability of the treatments to be better than the other treatments.
+
+```{r}
+tmp <- getProbData(StudyObj,strProb = "UnWeightedUpdateProbabilities",cohortAgeNames="6-18 months")
+kable(tmp %>% select(TreatmentName,Prob))
+```
+
+TRT-3 is surprisingly the treatment with the highest probability of being the best treatment. However, this is based on a single realisation of the design. Running the study many times will allow us to compute statistics on the performance of the design.
+
+
+
+## Running the basic scenario multiple times to get statistics
+
+The basic scenario is run 100 times to get statistics on the randomization probability updates.
+
+```{r multiRun,cache=TRUE}
+iter   <- 100
+ncores <- 7
+
+myMultStud <- runMultiSim(StudyObjIni,iter=iter,ncores=ncores)
+```
+
+Extract the probabilities of interest.
+```{r,cache=TRUE}
+probDfUnweightedUpdate <- getMultiProbList(myMultStud[[1]],ncores=ncores, strProb="UnWeightedUpdateProbabilities", cohortAgeNames="6-18 months")  
+```
+
+Summarise the end of treatment probabilities for plotting and tabulation.
+```{r}
+sumData <- 
+  probDfUnweightedUpdate %>% 
+  filter(RandStudyTime == max(RandStudyTime)) %>% 
+  group_by(TreatmentName,CohortAge) %>% 
+  summarise(
+    Mean=mean(Prob),
+    Low=quantile(Prob,p=0.025),
+    High=quantile(Prob,p=0.975)
+    )
+```
+
+Plot and tabulate the treatment probability statistics.
+```{r}
+ggplot(sumData,aes(TreatmentName,Mean,color=TreatmentName)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=Low,ymax=High),width=0.2) +
+  facet_wrap(~CohortAge,scales = "free_x")
+```
+
+```{r}
+kable(sumData %>% select(TreatmentName,Mean,Low,High) %>% rename(Treatment =TreatmentName,"P0.025"=Low,"P0.975"=High),dig=2)
+```
+
+
+
+# The alternative design
+
+```{r}
+set.seed(85859)
+```
+
+## Create the study with the alternative design
+
+```{r}
+StudyObjIniAlt <- createStudy(
+  nCohorts = 1,
+  recruitmentAges = list(c(6,7)*30),
+  nSubjects = c(1000),
+  cohortStartTimes = c(6*30),
+  newCohortLink = list(NULL),
+  Recruitmentfunction=function(...) {return(5000)},
+  samplingDesign = list(seq(0,12,by=2)*30),
+  studyStopTime = 18*30+1,
+  latestTimeForNewBirthCohorts=6*30,
+  treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4")),
+  effSizes = list(c(0.05,0.1,0.15,0.20,0.25)),
+  randomizationProbabilities = list(rep(0.20,5))
+  )
+```
+
+## Run the study
+
+Execute the study.
+```{r, cache=TRUE,results="hide"}
+StudyObjAlt <- AdaptiveStudy(StudyObjIniAlt)
+```
+
+## Visualise the results
+
+### The number of subjects over time
+```{r}
+plotActiveSubjects(StudyObjAlt)
+```
+
+### The simulated HAZ data
+
+The simulated HAZ values can be inspected using the `plotHAZ` function.
+
+```{r}
+plotHAZ(StudyObjAlt)
+```
+
+
+### The treatment effects
+
+```{r}
+plotHAZTreatmentEff(StudyObjAlt)
+```
+
+### The posterior probabilities
+
+The data can be used to update the posterior probability of the treatments to be better than the other treatments.
+
+```{r}
+tmp <- getProbData(StudyObjAlt,strProb = "UnWeightedUpdateProbabilities",cohortAgeNames="6-18 months")
+kable(tmp %>% select(TreatmentName,Prob))
+```
+
+## Running the alternative scenario multiple times to get statistics
+
+The alternative scenario is run 100 times to get statistics on the randomization probability updates.
+
+```{r multiRunAlt,cache=TRUE}
+iter   <- 100
+ncores <- 7
+
+myMultStudAlt <- runMultiSim(StudyObjIniAlt,iter=iter,ncores=ncores)
+```
+
+Extract the probabilities of interest.
+```{r,cache=TRUE}
+probDfUnweightedUpdateAlt <- getMultiProbList(myMultStudAlt[[1]],ncores=ncores, strProb="UnWeightedUpdateProbabilities", cohortAgeNames="6-18 months")  
+```
+
+Summarise the end of treatment probabilities for plotting and tabulation.
+```{r}
+sumDataAlt <- 
+  probDfUnweightedUpdateAlt %>% 
+  filter(RandStudyTime == max(RandStudyTime)) %>% 
+  group_by(TreatmentName,CohortAge) %>% 
+  summarise(
+    Mean=mean(Prob),
+    Low=quantile(Prob,p=0.025),
+    High=quantile(Prob,p=0.975)
+    )
+```
+
+Plot and tabulate the treatment probability statistics.
+```{r}
+ggplot(sumDataAlt,aes(TreatmentName,Mean,color=TreatmentName)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=Low,ymax=High),width=0.2) +
+  facet_wrap(~CohortAge,scales = "free_x")
+```
+
+```{r}
+kable(sumDataAlt %>% select(TreatmentName,Mean,Low,High) %>% rename(Treatment =TreatmentName,"P0.025"=Low,"P0.975"=High),dig=2)
+```
+
+
