@@ -38,4 +38,4 @@ plotHAZTreatmentEff(StudyObj)
 plotProbs(StudyObj)
 
 ## Extract the probabilities used in the plotProbs plot above.
-tmp <- getProbData(StudyObj)
+#tmp <- getProbData(StudyObj)
