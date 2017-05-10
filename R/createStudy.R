@@ -72,7 +72,8 @@ createStudy <- function(nCohorts = 3,
                         AnalyzeDataEventFunction = AnalyzeDataEvent, 
                         UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
                         AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
-                        probTemperationFunction = probTemperation) {
+                        probTemperationFunction = probTemperation,
+                        interimAnalyzesTimeFunction = InterimAnalyzesTime) {
 
   ## Create the study design setting list ##
   
@@ -131,6 +132,9 @@ createStudy <- function(nCohorts = 3,
   
   # Function to modify the unweighted ranndomization probabilities
   StudyDesignSettings$probTemperation <- probTemperationFunction
+  
+  # Function to specify the time for interim analysis
+  StudyDesignSettings$InterimAnalyzesTime <- interimAnalyzesTimeFunction
   
   ## Create the study object ##
   StudyObj <- list()

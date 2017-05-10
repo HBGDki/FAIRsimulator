@@ -239,8 +239,12 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     df$SANITATN<-as.factor(df$SANITATN)
     df$AGE<-df$AGE/(12*30) #Rescale time to years
     
+    
     #### Perform LME estimation based on some covariates and treatment effects for each cohort
-    lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
+  
+    lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE) # IIV on baseline only
+    
+    #lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (1+AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE)
     ##### Calculate new probabilites based on another cohort LME results
     lmecoef<-summary(lmefit)$coefficients[,1] #Get coefficicents from LME
     lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
@@ -290,6 +294,8 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
     Cohort$UpdateProbabilities<-probs #The latest probability updates
     Cohort$UnWeightedUpdateProbabilities<-nonupdateprobs #The latest probability updates
     
+    Cohort$AnalysisTime <- c(Cohort$AnalysisTime,StudyObj$CurrentTime) # Save the study time of analysis
+    
     Cohort$UpdateCoefficients<-lmecoef #The latest coefficients
     Cohort$UpdateSE<-lmese #The latest coefficients standard errors
     StudyObj$CohortList[[cohortindex]]<-Cohort #Save the updated cohort
@@ -328,7 +334,7 @@ AnalyzeDataEvent<-function(StudyObj) {
       Cohort<-StudyObj$CohortList[[i]]
       if (Cohort$Active) { #if this is an active cohort
         cohortCompleted<-CohortCompleted(Cohort,StudyObj)
-        cohortInterimAnalysis<-InterimAnalyzesTime(Cohort,StudyObj)
+        cohortInterimAnalysis<-StudyObj$StudyDesignSettings$InterimAnalyzesTime(Cohort,StudyObj)
         if (cohortCompleted || cohortInterimAnalysis) { #If we should update probabilities of child cohorts
           StudyObj<-UpdateProbabilities(Cohort,StudyObj,i)
         }
@@ -391,7 +397,7 @@ NewCohort<-function(StudyObj,CohortNum=NULL) {
   Cohort$CohortStartTime<-StudyObj$CurrentTime #The Cohort start time in relation to the study time
   Cohort$CohortStartDate<-StudyObj$CurrentDate #The Cohort start date
   Cohort$CurrentTime<-0 #The Cohort time
-  #Cohort$RecruitmentRateFunction<-RecruitmentRatefunction # The recruitment rate function
+  Cohort$AnalysisTime <- NULL # Study time of analyses
   Cohort$RecruitmentRateFunction<-StudyObj$Recruitmentfunction # The recruitment rate function
 
   if (!is.null(CohortNum)) {
