@@ -73,7 +73,7 @@ StudyObj<-AdaptiveStudy(StudyObjIni)
 
 The `plotStudyCohorts` function provides a  high level picture of the study.
 ```{r}
-plotStudyCohorts(StudyObj)
+plotStudyCohorts(StudyObj,plotAnaTimes = T)
 ```
 
 ### The number of subjects remaining

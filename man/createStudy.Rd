@@ -31,7 +31,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   AnalyzeDataEventFunction = AnalyzeDataEvent,
   UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
   AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
-  probTemperationFunction = probTemperation)
+  probTemperationFunction = probTemperation,
+  interimAnalyzesTimeFunction = InterimAnalyzesTime)
 }
 \arguments{
 \item{nCohorts}{The number of cohorts.}

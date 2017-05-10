@@ -1,45 +1,51 @@
-##This example simulates a staggered design with 3 cohort ages and an interim analysis
+## This example simulates a design with 3 cohort ages, a recruitment rate of 20 choldren/day and an interim analysis after 5 months
 
 library(FAIRsimulator)
-# 
-# set.seed(324124)
-# 
-# StudyObj <- createStudy(latestTimeForNewBirthCohorts=0,studyStopTime = 6*30+1,
-#                         nSubjects = c(1000,1000,1000),cohortStartTimes = c(0,0,0),
-#                         samplingDesign = list(c(0,1,2,3,4,5,6)*30,c(0,1,2,3,4,5,6)*30,c(0,1,2,3,4,5,6)*30),
-#                         randomizationProbabilities = list(rep(0.20,5),rep(0.20,5),rep(0.20,5)),
-#                         minAllocationProbabilities = list(c(0.2,rep(0,4)),c(0.2,rep(0,4)),c(0.2,rep(0,4))),
-#                         treatments =list(c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
-#                         effSizes = list(c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25),c(0,0.05,0.1,0.15,0.25)),
-#                         Recruitmentfunction=function(...) {return(5000)},
-#                         minSubjects = 10,newCohortLink = list(NULL,NULL,NULL),
-#                         dropoutRates = rep(0.2/(6*30),3))
+set.seed(8585)
 
-# #Set residual error to 0
-# StudyObj$InitEvent <- function(StudyObj) {
-#   StudyObj<-FAIRsimulator::InitEvent(StudyObj)
-#   StudyObj$sig<-0 #Set residual error to 0
-#   return(StudyObj)
-# }
-# 
-# 
-# StudyObj<-AdaptiveStudy(StudyObj)
-# 
-# ## Plot the design
-# plotStudyCohorts(StudyObj)
-# 
-# ## plot the number of active subjects per treatment cycle and cohort
-# plotActiveSubjects(StudyObj)
-# 
-# ## Plot the HAZ profiles versus age.
-# plotHAZ(StudyObj)
-# 
-# ## Plot the HAZ data and the treatment effects
-# plotHAZTreatmentEff(StudyObj)
-# 
-# # Plot the randomization probabilities at end of study
-# plotProbs(StudyObj,strProb = "UnWeightedUpdateProbabilities")
-# print("LMER Coefficients for each cohort:")
-# StudyObj$CohortList[[1]]$UpdateCoefficients
-# StudyObj$CohortList[[2]]$UpdateCoefficients
-# StudyObj$CohortList[[3]]$UpdateCoefficients
+InterimAnalyzesTime<-function(Cohort,StudyObj) {
+   TimeToPerformInterim <-FALSE
+  
+  if (Cohort$CurrentTime %in% c(5*30)) {
+    TimeToPerformInterim<-TRUE
+  }
+   
+  return(TimeToPerformInterim)
+}
+
+
+StudyObjIni <- createStudy(
+  cohortStartTimes = c(0,0,0),
+  newCohortLink = list(2, 3, NULL),
+  recruitmentAges = list(c(0,1)*30,c(6,7)*30,c(12,13)*30),
+  nSubjects = c(300,300,300),
+  Recruitmentfunction=function(...) {return(20)},
+  samplingDesign = list(0:6*30, seq(0,6,by=2)*30, seq(0,6,by=2)*30),
+  studyStopTime = 25*30+3,
+  latestTimeForNewBirthCohorts=0*30,
+  treatments =list(
+    c("SoC-1","TRT-1","TRT-2","TRT-3","TRT-4"),
+    c("SoC-2","TRT-5","TRT-6","TRT-7","TRT-8"),
+    c("SoC-3","TRT-9","TRT-10","TRT-11","TRT-12")),
+  effSizes = list(c(0,0.05,0.1,0.15,0.25),
+                  c(0,0.05,0.1,0.15,0.25),
+                  c(0,0.05,0.1,0.15,0.25)),
+  randomizationProbabilities = list(rep(0.20,5),rep(0.20,5),rep(0.20,5)),
+  strCovariates = c("BIRTHWT","MAGE", "MHTCM", "SEXN", "SANITATN"),
+  minAllocationProbabilities = list(c(0.2,rep(0,4)),c(0.2,rep(0,4)),c(0.2,rep(0,4)))
+)
+
+# Run the study
+StudyObj <- AdaptiveStudy(StudyObjIni)
+
+## Plot the design and interim analysis time points
+plotStudyCohorts(StudyObj,plotAnaTimes = T)
+
+## Plot the active subjects
+plotActiveSubjects(StudyObj)
+
+# Check the randomization probabilities based on the interim analysis in cohort 4
+StudyObj$CohortList[[4]]$PreviousRandomizationProbabilities[[1]]$RandomizationProbabilities
+
+# Check the randomization probabilities based on the final analysis in cohort 4
+StudyObj$CohortList[[4]]$RandomizationProbabilities

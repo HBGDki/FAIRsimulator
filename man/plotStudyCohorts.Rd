@@ -4,12 +4,15 @@
 \alias{plotStudyCohorts}
 \title{plotStudyCohorts}
 \usage{
-plotStudyCohorts(StudyObj, cohortlength = 6 * 30, wrapVariable = NULL)
+plotStudyCohorts(StudyObj, cohortlength = 6 * 30, plotAnaTimes = FALSE,
+  wrapVariable = NULL)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
 
 \item{cohortlength}{The length (in days) of cohorts that are evolving}
+
+\item{plotAnaTimes}{Logical. Should the analysis times be indicated in the plot.}
 
 \item{wrapVariable}{The name (as a string) of the variable to create facets with, using \code{facet_wrap}.}
 }
