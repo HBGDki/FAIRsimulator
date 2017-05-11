@@ -1,4 +1,4 @@
-## Simulates 2 cohorts with the same recruitment age but with start times 0 and 6 months. The second cohort have its randomization probabilities udpated based on the first cohort.
+## Simulates 3 cohorts with the same recruitment age but with start times 0 and 6 months. The second and third cohort have its randomization probabilities udpated based on the first/second cohort.
 
 ## It doesn't work right now.
 

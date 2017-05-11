@@ -21,7 +21,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   * 28, latestTimeForNewBirthCohorts = 0, strCovariates = c("BIRTHWT",
   "MAGE", "MHTCM", "SEXN", "SANITATN"), currentDate = Sys.Date(),
   minFutilityProb = 0.1, checkFutility = c("before", "after"),
-  impMethod = c("pmm", "median"), InitEventFunction = InitEvent,
+  impMethod = c("pmm", "median"), accumulatedData = FALSE,
+  InitEventFunction = InitEvent,
   StudyIncrementEventFunction = StudyIncrementEvent,
   StopEventFunction = StopEvent, AddCohortEventFunction = AddCohortEvent,
   DropoutEventFunction = DropoutEvent,
@@ -30,6 +31,7 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
   MoveCompletedSubjectsFunction = MoveCompletedSubjects,
   AnalyzeDataEventFunction = AnalyzeDataEvent,
   UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
+  updateProbabilitiesFunction = UpdateProbabilities,
   AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
   probTemperationFunction = probTemperation,
   interimAnalyzesTimeFunction = InterimAnalyzesTime)
@@ -72,6 +74,8 @@ createStudy(nCohorts = 3, cohortStartTimes = c(2, 1, 0),
 \item{checkFutility}{If futility should be checked before or after taking minimum allocation into account. Default is 'before. Possible values are 'before' and 'after'.}
 
 \item{impMethod}{Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.}
+
+\item{accumulatedData}{Should accumulated data be used for probability updates? Logical. Default is FALSE.}
 
 \item{StudyIncrementEventFunction}{Study increment event function}
 

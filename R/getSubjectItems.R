@@ -16,7 +16,8 @@ getSubjectItems <- function(subjectObj,
                             scalarItems=c("StudyID","AgeAtRand","DateAtRand","RandStudyTime","RandCohortTime","CurrentAge",
                                           "CurrentCohortTime","TreatmentIndex","Treatment","TreatmentEff","RandNum","DropoutStudyTime","DropoutCohortTime"),
                             covariates = "Covariates",
-                            longitudinalItems = c("SampleAge","CohortSampleTime","StudySampleTime","Data")) {
+                            longitudinalItems = c("SampleAge","CohortSampleTime","StudySampleTime","Data"),
+                            prevTreatment = FALSE) {
   
   if(class(subjectObj) != "individual") stop("subjectObj needs to be a individual object")
   
@@ -50,6 +51,14 @@ getSubjectItems <- function(subjectObj,
     
     ## Add StudyId
     longItems$StudyID <- subjectObj[["StudyID"]]
+  }
+  
+  if(prevTreatment) {
+    pTreat <- unlist(subjectObj$PreviousTreatment)
+    
+    if(!is.null(pTreat)) {
+      myDf[paste0("PTRT",1:length(pTreat))] <- pTreat
+    }      
   }
   
   ## Merge the data

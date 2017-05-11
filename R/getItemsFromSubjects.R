@@ -31,6 +31,7 @@ getItemsFromSubjects <- function(cohortObj,...) {
   resDf$CycleNum         <- cohortObj$CycleNum
   resDf$StartNum         <- cohortObj$StartNum
   resDf$RandomizationAge <- cohortObj$RandomizationAgeRange[1]
+  resDf$Level            <- cohortObj$Level
   
   return(resDf)
 }
