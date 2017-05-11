@@ -22,6 +22,7 @@
 #' @param strCovariates A vector with the names of the covariates that should be used in the interim analysis.
 #' @param currentDate The study start date, default = current system date.
 #' @param impMethod Imputation method for missing covariates in the interim analyses. \code{pmm}=predictive mean matching and \code{median} = median imputation.
+#' @param accumulatedData Should accumulated data be used for probability updates? Logical. Default is FALSE.
 #' @param InitEvent Init event funciton
 #' @param checkFutility If futility should be checked before or after taking minimum allocation into account. Default is 'before. Possible values are 'before' and 'after'.
 #' @param minFutilityProb The probability below which a treatment is regarded as futile.
@@ -61,6 +62,7 @@ createStudy <- function(nCohorts = 3,
                         minFutilityProb = 0.1,
                         checkFutility = c("before","after"),
                         impMethod = c("pmm", "median"),
+                        accumulatedData = FALSE,
                         InitEventFunction           = InitEvent,
                         StudyIncrementEventFunction = StudyIncrementEvent,
                         StopEventFunction = StopEvent,
@@ -71,6 +73,7 @@ createStudy <- function(nCohorts = 3,
                         MoveCompletedSubjectsFunction = MoveCompletedSubjects,
                         AnalyzeDataEventFunction = AnalyzeDataEvent, 
                         UpdateProbabilitiesEventFunction = UpdateProbabilitiesEvent,
+                        updateProbabilitiesFunction = UpdateProbabilities,
                         AddNewBirthCohortEventFunction = AddNewBirthCohortEvent,
                         probTemperationFunction = probTemperation,
                         interimAnalyzesTimeFunction = InterimAnalyzesTime) {
@@ -87,6 +90,9 @@ createStudy <- function(nCohorts = 3,
   StudyDesignSettings$MinAllocationProbabilities <- minAllocationProbabilities #Minimum allocation probabilities for each treatment
                                                        
 
+  ## Setting for using accumulated data within same level
+  StudyDesignSettings$AccumulatedData <- accumulatedData
+  
   StudyDesignSettings$iNumPosteriorSamples       <- 10000 #The number of samples to calculate prob of beeing best
   
   StudyDesignSettings$Treatments <- treatments #The treatment
@@ -135,6 +141,9 @@ createStudy <- function(nCohorts = 3,
   
   # Function to specify the time for interim analysis
   StudyDesignSettings$InterimAnalyzesTime <- interimAnalyzesTimeFunction
+  
+  # Function to analyse the data
+  StudyDesignSettings$UpdateProbabilities <- updateProbabilitiesFunction
   
   ## Create the study object ##
   StudyObj <- list()

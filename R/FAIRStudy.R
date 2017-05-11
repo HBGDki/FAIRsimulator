@@ -208,6 +208,10 @@ GetCohortData<-function(Cohort,StudyObj) {
     })
     df<-as.data.frame(rbind(data.table::rbindlist(dflist)))
   }
+  
+  myDf <- getItemsFromSubjects(Cohort) %>% select_()
+  
+  names(myDf)
   return (df)  
 }
 
@@ -336,7 +340,8 @@ AnalyzeDataEvent<-function(StudyObj) {
         cohortCompleted<-CohortCompleted(Cohort,StudyObj)
         cohortInterimAnalysis<-StudyObj$StudyDesignSettings$InterimAnalyzesTime(Cohort,StudyObj)
         if (cohortCompleted || cohortInterimAnalysis) { #If we should update probabilities of child cohorts
-          StudyObj<-UpdateProbabilities(Cohort,StudyObj,i)
+          StudyObj<-StudyObj$StudyDesignSettings$UpdateProbabilities(Cohort,StudyObj,i)
+          #StudyObj<-UpdateProbabilities(Cohort,StudyObj,i)
         }
         if (cohortCompleted) { #If this is a completed cohort
           StudyObj$CohortList[[i]]$Active<-FALSE
