@@ -37,7 +37,9 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapV
   p <- p + scale_x_continuous(breaks = seq(0,48,by=6),limits= c(0, max((cohortdetails$CohortStartTime+cohortdetails$CohortDuration)/30)))
   
   if(plotAnaTimes) {
-    anaTime        <- data.frame(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
+    anaTime        <- sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE)
+    anaTime        <- data.frame(lapply(anaTime,function(x) {ifelse(is.null(x),return(NA),return(x))}))
+    #anaTime        <- data.frame(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
     names(anaTime) <- names(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
     anaTime        <- gather(anaTime,"Name","AnalysisTimes") %>%  distinct(Name,AnalysisTimes)
     anaTime$Name   <- as.factor(anaTime$Name) 
