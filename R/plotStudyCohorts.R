@@ -14,7 +14,7 @@
 #' \dontrun{
 #' plotStudyCohorts(StudyObj)
 #' }
-plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapVariable=NULL,shiftByLevel=NULL) {
+plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapVariable=NULL,shiftWithinLevel=NULL) {
   
   if(class(StudyObj) != "study") stop("studyObj needs to be a study object")
   cohortdetails<-getCohortDetails(StudyObj)
@@ -26,11 +26,11 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapV
   cohortdetails$ymax<-cohortdetails$EndRandomizationAge/30
   
   
-  if (!is.null(shiftByLevel)) {
+  if (!is.null(shiftWithinLevel)) {
    for (i in 1:max(cohortdetails$Level)) {
     if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
-      cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftByLevel
-      cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftByLevel
+      cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
+      cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
     }
    }
   }
