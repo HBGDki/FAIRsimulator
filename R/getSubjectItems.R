@@ -57,7 +57,7 @@ getSubjectItems <- function(subjectObj,
     pTreat <- unlist(subjectObj$PreviousTreatment)
     
     if(!is.null(pTreat)) {
-      myDf[paste0("PTRT",1:length(pTreat))] <- pTreat
+      myDf[paste0("PTRT",length(pTreat):1)] <- pTreat
     }      
   }
   
