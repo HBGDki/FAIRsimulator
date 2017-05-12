@@ -105,7 +105,7 @@ StudyObj <- AdaptiveStudy(StudyObjIni)
 
 
 
-plotStudyCohorts(StudyObj,plotAnaTimes = T,shiftByLevel = 0.2)
+plotStudyCohorts(StudyObj,plotAnaTimes = T,shiftWithinLevel = 0.1)
 
 StudyObj$CohortList %listmap% "RandomizationProbabilities"
 StudyObj$CohortList %listmap% "UpdateProbabilities"
