@@ -4,15 +4,17 @@
 \alias{GetCohortData}
 \title{GetCohortData}
 \usage{
-GetCohortData(Cohort, StudyObj)
+GetCohortData(Cohort, StudyObj, accumulatedData = FALSE)
 }
 \arguments{
 \item{Cohort}{A FAIRsimulator \code{cohort} object}
 
 \item{StudyObj}{A FAIRsimulator \code{study} object}
+
+\item{accumulatedData}{If using one cohort (FALSE) or all cohorts with the same level (age) (TRUE)}
 }
 \value{
-A \code{data.frame}
+A \code{data.frame} with the Cohort level subject specific data (and covariates)
 }
 \description{
 Get dataset for a Cohort object

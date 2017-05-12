@@ -23,7 +23,8 @@ getCohortDetails <- function(StudyObj) {
     CycleNum =  myCohorts %listmap% "CycleNum",
     RandomizationAge = (myCohorts %listmap% "RandomizationAgeRange")[1,],
     EndRandomizationAge = (myCohorts %listmap% "RandomizationAgeRange")[2,],
-    CohortDuration = myCohorts %listmap% "CurrentTime"
+    CohortDuration = myCohorts %listmap% "CurrentTime",
+    Level = myCohorts %listmap% "Level"
   )
   
   row.names(df) <- NULL

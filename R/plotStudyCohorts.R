@@ -5,6 +5,7 @@
 #' @param cohortlength The length (in days) of cohorts that are evolving 
 #' @param plotAnaTimes Logical. Should the analysis times be indicated in the plot.
 #' @param wrapVariable The name (as a string) of the variable to create facets with, using \code{facet_wrap}.
+#' @param shiftByLevel Shifting each cohort upwards the y-axis by level and this amount, default= NULL (no shift)
 #'
 #' @return A \code{ggplot} object
 #' @export
@@ -13,20 +14,32 @@
 #' \dontrun{
 #' plotStudyCohorts(StudyObj)
 #' }
-plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapVariable=NULL) {
+plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapVariable=NULL,shiftByLevel=NULL) {
   
   if(class(StudyObj) != "study") stop("studyObj needs to be a study object")
-  
   cohortdetails<-getCohortDetails(StudyObj)
   
   cohortdetails$EndRandomizationAge[cohortdetails$CycleNum>1]<-cohortdetails$EndRandomizationAge[cohortdetails$CycleNum>1]+(cohortdetails$CycleNum[cohortdetails$CycleNum>1]-1)*cohortlength
   cohortdetails$RandomizationAge[cohortdetails$CycleNum>1]<-cohortdetails$RandomizationAge[cohortdetails$CycleNum>1]+(cohortdetails$CycleNum[cohortdetails$CycleNum>1]-1)*cohortlength
   
+  cohortdetails$ymin<-cohortdetails$RandomizationAge/30
+  cohortdetails$ymax<-cohortdetails$EndRandomizationAge/30
+  
+  
+  if (!is.null(shiftByLevel)) {
+   for (i in 1:max(cohortdetails$Level)) {
+    if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
+      cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftByLevel
+      cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftByLevel
+    }
+   }
+  }
+  
   p <- ggplot(data=cohortdetails)
   p <- p + geom_rect(aes(xmin=CohortStartTime/30,
                          xmax=(CohortStartTime+CohortDuration)/30,
-                         ymin=RandomizationAge/30,
-                         ymax=EndRandomizationAge/30,
+                         ymin=ymin,
+                         ymax=ymax,
                          fill=Cohort,linetype=Cohort),
                      color="black",alpha=0.7)
   p <- p + xlab("Study time (month)")
@@ -43,7 +56,7 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapV
     names(anaTime) <- names(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
     anaTime        <- gather(anaTime,"Name","AnalysisTimes") %>%  distinct(Name,AnalysisTimes)
     anaTime$Name   <- as.factor(anaTime$Name) 
-    anaTime        <- left_join(anaTime,cohortdetails,by="Name") %>% mutate(midTime = (RandomizationAge/30 + EndRandomizationAge/30)/2)
+    anaTime        <- left_join(anaTime,cohortdetails,by="Name") %>% mutate(midTime = (ymin + ymax)/2)
     
     p <- p + geom_point(data=anaTime,aes(AnalysisTimes/30,midTime),shape=19,size=4)
     p <- p + geom_point(data=anaTime,aes(AnalysisTimes/30,midTime,color=Cohort),shape=17,size=2)
