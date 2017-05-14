@@ -70,7 +70,7 @@ InterimAnalyzesTime<-function(Cohort,StudyObj) {
     return(as.numeric(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime)))},max(Cohort$SamplingDesign))))/Cohort$MaxNumberOfSubjects
   if (length(tmp)==0) tmp<-0
   
-  if (Cohort$RandomizationAgeRange[1]==6*30 && StudyObj$CurrentTime==6*30-1) {
+  if (Cohort$RandomizationAgeRange[1]==6*30 && (StudyObj$CurrentTime==6*30-1 || StudyObj$CurrentTime==18*30-1 )) {
     DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
     TimeToPerformInterim<-TRUE
   }
@@ -87,7 +87,7 @@ StudyObjIni <- createStudy(
   newCohortLink                  = list(NULL,NULL),
   Recruitmentfunction            = function(...) {return(5000)},
   samplingDesign                 = list(seq(0,12,by=2)*30,seq(0,6,by=1)*30),
-  studyStopTime                  = 18*30+3,
+  studyStopTime                  = 18*30+5,
   latestTimeForNewBirthCohorts   = 14*30+1,
   treatments                     = list(c("SoC-1","Cell 1","Cell 2"," Cell 3"," Cell 4"),c("SoC-1","Cell 1","Cell 2"," Cell 3"," Cell 4")),
   effSizes                       = list(c(0,0.0633,0.1037,0.1574,0.1687),c(0,0.0633,0.1037,0.1574,0.1687)),
@@ -95,7 +95,8 @@ StudyObjIni <- createStudy(
   minAllocationProbabilities     = list(c(0.2,rep(0,4)),c(0.2,rep(0,4))),
   probTemperationFunction        = probTemperation,
   AddNewBirthCohortEventFunction = AddNewSixMonthCohortEvent,
-  interimAnalyzesTimeFunction    = InterimAnalyzesTime
+  interimAnalyzesTimeFunction    = InterimAnalyzesTime,
+  accumulatedData = TRUE
 )
 
 StudyObjIni$EventList[[length(StudyObjIni$EventList)+1]]<-AddNewTwelveMonthCohortEvent
@@ -105,7 +106,9 @@ StudyObj <- AdaptiveStudy(StudyObjIni)
 
 
 
-plotStudyCohorts(StudyObj,plotAnaTimes = T,shiftWithinLevel = 0.1)
+plotStudyCohorts(StudyObj,plotAnaTimes = T,shiftWithinLevel = 1)
+
+plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="UpdateProbabilities")
 
 StudyObj$CohortList %listmap% "RandomizationProbabilities"
 StudyObj$CohortList %listmap% "UpdateProbabilities"
