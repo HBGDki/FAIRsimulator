@@ -5,7 +5,8 @@
 \title{runMultiSim}
 \usage{
 runMultiSim(StudyOnjIni, extractProbs = TRUE, iter = 1, ncores = 1,
-  strProb = "UnWeightedRandomizationProbabilities", cohortAgeNames = NULL)
+  strProb = "UnWeightedRandomizationProbabilities", cohortAgeNames = NULL,
+  clean = TRUE)
 }
 \arguments{
 \item{StudyOnjIni}{An initial FAIRsimulator \code{study} object created by \code{createStudy}.}

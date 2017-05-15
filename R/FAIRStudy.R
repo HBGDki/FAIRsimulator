@@ -1357,7 +1357,7 @@ probTemperation <- function(probs) {
 #'
 #' myMultStud <- runMultiSim(StudyOnjIni,iter=10,ncores=2)
 #' }
-runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL) {
+runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL,clean=TRUE) {
   
   if(extractProbs & is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
   
@@ -1367,12 +1367,21 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="U
   ## Run the simulations
   myRes <- foreach(i=1:iter) %dopar% AdaptiveStudy(StudyObjIni)
   
+  cleanFun <- function(myList) {
+    myList$dfSubjPool <- NULL
+    myList$dfFFEMPool <- NULL
+    return(myList)
+  }
+  
   ## Extract the probabilities if requested
   if(extractProbs) {
     probDf  <- getMultiProbList(myRes,ncores=ncores,cohortAgeNames=cohortAgeNames,strProb=strProb)
       
+    if(clean) myRes <- lapply(myRes,cleanFun)
     retList <- list(studList = myRes,probDf = probDf)
   } else {
+    
+    if(clean) myRes <- lapply(myRes,cleanFun)
     retList <- list(studList = myRes)
   }
   

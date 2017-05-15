@@ -242,6 +242,10 @@ FinalAnalysesEvent<-function(StudyObj) {
       FinalAnalyses$LMECoeff<-lmecoef
       FinalAnalyses$LMESE<-lmese
       StudyObj$FinalAnalysesList[[length(StudyObj$FinalAnalysesList)+1]]<-FinalAnalyses
+      
+      ## Also add probabilities and coeffs on the StudyObj level
+      StudyObj$FinalUnWeightedUpdateProbabilities<-probs
+      StudyObj$LMECoeff<-lmecoef
     }
   }
   return(StudyObj)
@@ -296,63 +300,172 @@ allData$Cohort2 <- factor(allData$Cohort2,levels=c("Cohort 2","Cohort 4","Cohort
 plotHAZ(StudyObj,data=allData) + aes(color=Cohort) + facet_wrap(~Cohort2) + theme(legend.position="none") + scale_x_continuous(breaks=c(6,12,18))
 ```
 
-The randomization probabilties *before* adjusting for the minimum SoC randomization probability.
+The randomization probabilties **before*** adjusting for the minimum SoC randomization probability.
 
 ```{r,warning=FALSE,echo=FALSE,message=FALSE,error=FALSE,fig.width=9}
-plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
+plotProbs(StudyObj,cohortAgeNames=c("6-18 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
 ```
 
 
-The randomization probabilties after adjusting for the minimum SoC randomization probability.
+The randomization probabilties **after** adjusting for the minimum SoC randomization probability.
 
 ```{r,warning=FALSE,echo=FALSE,message=FALSE,error=FALSE,fig.width=9}
-plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities")
-# getProbData(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities")
-# 
-# plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"))
+plotProbs(StudyObj,cohortAgeNames=c("6-18 months","12-18 months"),strProb="RandomizationProbabilities")
+```
+
+The final analysis of all the data gives the following probabilities:
+
+```{r, echo=FALSE}
+finalProbDf <- data.frame(Treatment=StudyObj$StudyDesignSettings$Treatments[[1]],
+                          Col1= StudyObj$FinalAnalysesList[[1]]$UnWeightedUpdateProbabilities,
+                          Col2= StudyObj$FinalAnalysesList[[2]]$UnWeightedUpdateProbabilities)
+
+kable(finalProbDf,dig=2,col.names=c("Treatment","Prob 6-18 months","Prob 12-18 months"))
+```
+
+The final analysis of all the data gives the following estimated treatment effects (change in HAZ/6 months):
+
+```{r, echo=FALSE}
+finalCoefDf <- data.frame(Treatment=(StudyObj$StudyDesignSettings$Treatments[[1]])[-1],
+                          Col1= StudyObj$FinalAnalysesList[[1]]$LMECoeff/2,
+                          Col2= StudyObj$FinalAnalysesList[[2]]$LMECoeff/2)
+
+kable(finalCoefDf,dig=2,col.names=c("Treatment","Eff 6-18 months","Eff 12-18 months"),row.names=FALSE)
 ```
 
 
 ## Repeating the study multiple times
 
 ```{r runMult,multiRun,cache=TRUE,warning=FALSE,echo=FALSE}
-iter   <- 7
+iter   <- 2
 ncores <- 7
 
-myMultStud <- runMultiSim(StudyObjIni,iter=iter,ncores=ncores,cohortAgeNames=c("6-12 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
+myMultStud <- runMultiSim(StudyObjIni,iter=iter,ncores=ncores,cohortAgeNames=c("6-18 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
 ```
 
 ```{r getProbs, cache=TRUE,dependson="runMult",echo=FALSE}
 probDfUnWeightedRandProb <- myMultStud[[2]]
-probDfRandProb <- getMultiProbList(myMultStud[[1]],cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities",ncore=ncores)
+probDfRandProb <- getMultiProbList(myMultStud[[1]],cohortAgeNames=c("6-18 months","12-18 months"),strProb="RandomizationProbabilities",ncore=ncores)
 ```
 
-Running the study multiple time (in this case `r iter` times) allows for the computation of performance statistics.
+Running the study multiple time (in this case **`r iter` times**) allows for the computation of performance statistics.
 
-The randomization probabilties *after*before* adjusting for the minimum SoC randomization probability. The shaded areas are the 95% prediction intervals.
+The randomization probabilties *after* adjusting for the minimum SoC randomization probability. The shaded areas are the 95% prediction intervals.
 
-```{r,dependson="getProbs",echo=FALSE}
+```{r,dependson="getProbs",echo=FALSE,fig.width=10}
 plotMultiProb(probDfUnWeightedRandProb)
 ```
 
 The randomization probabilties after adjusting for the minimum SoC randomization probability. The shaded areas are the 95% prediction intervals.
 
-```{r,dependson="getProbs",echo=FALSE}
+```{r,dependson="getProbs",echo=FALSE,fig.width=10}
 plotMultiProb(probDfRandProb)
 ```
 
 
-```{r}
+### Performance metrics
 
-trtNams1 <- c("SoC-1","Cell 1", "Cell 2","Cell 3","Cell 4")
+To compare design choices quantitatively it is useful with performance metrics. Two suggestions are the randomization probabilities based on an analysis of all data (i.e. at the end of the trial) and the estimated treatment effects based on all data.
+
+```{r, echo=FALSE}
+
+trtNams1 <- c("SoC-1","Cell1", "Cell2","Cell3","Cell4")
 
 
 nStud <- length(myMultStud[[1]])
 
 dfProbs1 <- data.frame(matrix(0,nrow=nStud,ncol=length(trtNams1)))
+dfCoeff1 <- dfProbs1
+dfProbs2 <- data.frame(matrix(0,nrow=nStud,ncol=length(trtNams1)))
+dfCoeff2 <- dfProbs2
 
 for(i in 1:length(myMultStud[[1]])) {
-  myList[[i]] <- myMultStud[[1]][[i]]$FinalAnalysesList[[1]]$UnWeightedUpdateProbabilities
+  dfProbs1[i,] <- myMultStud[[1]][[i]]$FinalAnalysesList[[1]]$UnWeightedUpdateProbabilities
+  dfProbs2[i,] <- myMultStud[[1]][[i]]$FinalAnalysesList[[2]]$UnWeightedUpdateProbabilities
+  
+  dfCoeff1[i,] <- c(0,myMultStud[[1]][[i]]$FinalAnalysesList[[1]]$LMECoeff)
+  dfCoeff2[i,] <- c(0,myMultStud[[1]][[i]]$FinalAnalysesList[[2]]$LMECoeff)
 }
+
+names(dfProbs1) <- trtNams1
+names(dfProbs2) <- trtNams1
+names(dfCoeff1) <- trtNams1
+names(dfCoeff2) <- trtNams1
+
+dfProbs1$AgeGroup <- "6-18 months"
+dfProbs2$AgeGroup <- "12-18 months"
+
+dfCoeff1$AgeGroup <- "6-18 months"
+dfCoeff2$AgeGroup <- "12-18 months"
+
+dfProbs <- rbind(dfProbs1,dfProbs2)
+dfCoeff <- rbind(dfCoeff1,dfCoeff2)
+
+
+sumFinProb <- 
+  dfProbs %>% gather("Treatment","Probability",-AgeGroup) %>% 
+  mutate(Treatment = factor(Treatment,levels=trtNams1),AgeGroup=factor(AgeGroup,levels=c("6-18 months","12-18 months"))) %>% 
+  group_by(Treatment,AgeGroup) %>% 
+  summarise(
+    Mean = mean(Probability),
+    Low=quantile(Probability,p=0.025),
+    High=quantile(Probability,p=0.975))
+
+
+
+sumFinProbPow <- dfProbs
+
+for(i in 1:nrow(sumFinProbPow)) {
+  sumFinProbPow$Pow1[i] <- ifelse(sumFinProbPow$Cell1[i] == max(sumFinProbPow$Cell1[i],sumFinProbPow$Cell2[i],sumFinProbPow$Cell3[i],sumFinProbPow$Cell4[i]),1,0)
+  sumFinProbPow$Pow2[i] <- ifelse(sumFinProbPow$Cell2[i] == max(sumFinProbPow$Cell1[i],sumFinProbPow$Cell2[i],sumFinProbPow$Cell3[i],sumFinProbPow$Cell4[i]),1,0)
+  sumFinProbPow$Pow3[i] <- ifelse(sumFinProbPow$Cell3[i] == max(sumFinProbPow$Cell1[i],sumFinProbPow$Cell2[i],sumFinProbPow$Cell3[i],sumFinProbPow$Cell4[i]),1,0)
+  sumFinProbPow$Pow4[i] <- ifelse(sumFinProbPow$Cell4[i] == max(sumFinProbPow$Cell1[i],sumFinProbPow$Cell2[i],sumFinProbPow$Cell3[i],sumFinProbPow$Cell4[i]),1,0)
+}
+
+
+sumFinProbPow2 <- sumFinProbPow %>% 
+  select(AgeGroup,Pow1:Pow4) %>% 
+  dplyr::rename(Cell1=Pow1,Cell2=Pow2,Cell3=Pow3,Cell4=Pow4) %>% 
+  gather("Treatment","value",-AgeGroup) %>% 
+  group_by(Treatment,AgeGroup) %>% 
+  summarise(Power=sum(value/n())) %>% 
+  filter(Treatment=="Cell4")
+  
+sumFinCoeff <- 
+  dfCoeff %>% gather("Treatment","Coeff",-AgeGroup) %>% 
+  mutate(Treatment = factor(Treatment,levels=trtNams1),Effect = Coeff/2,AgeGroup=factor(AgeGroup,levels=c("6-18 months","12-18 months"))) %>% 
+  group_by(Treatment,AgeGroup) %>% 
+  summarise(
+    Mean = mean(Effect),
+    Low  = Mean - 1.96*sd(Effect)/sqrt(n()),
+    High   = Mean + 1.96*sd(Effect)/sqrt(n()))
+
 ```
 
+The "power" for Cell4 to be the best treatment in the two age groups are:
+
+```{r echo=FALSE}
+kable(sumFinProbPow2,dig=2)
+```
+
+
+The randomization probabilities (the bars are 95% prrdiction intervals):
+```{r, echo=FALSE}
+ggplot(sumFinProb,aes(Treatment,Mean,color=Treatment)) +
+  geom_point() +
+  theme(legend.position="none") +
+  geom_errorbar(aes(ymin=Low,ymax=High),width=0.2) +
+  facet_wrap(~AgeGroup)
+```
+
+The treatment effects/6 months (the black dots are the true effects an the bars are 95% CI).
+```{r, echo=FALSE}
+
+trueEff <- data.frame(Treatment=trtNams1,Mean=c(0,0.0633,0.1037,0.1574,0.1687))
+ggplot(sumFinCoeff,aes(Treatment,Mean,color=Treatment)) +
+  geom_point() +
+  geom_point(data=trueEff,color="black") +
+  theme(legend.position="none") +
+  geom_errorbar(aes(ymin=Low,ymax=High),width=0.2) +
+  facet_wrap(~AgeGroup)
+```
