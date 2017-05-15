@@ -228,18 +228,17 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
     }
   }
   
-  
   ## Rename, select and order columns
   if(length(names(myDf)[grep(names(myDf),pattern = "PTRT")]) >0) {
     myDf <- myDf %>% 
-      rename(ID=StudyID,DATA=Data,AGE=SampleAge,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+      dplyr::rename(ID=StudyID,DATA=Data,AGE=SampleAge,TRT=TreatmentIndex,TRTS=Treatment) %>% 
       select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName,matches("PTRT"))
     for (cstr in names(myDf)[grep(names(myDf),pattern = "PTRT")]) { #Set no previous treatment to "0"
       myDf[,cstr]<-ifelse(is.na(myDf[,cstr]),0,myDf[,cstr])
     }
   } else {
     myDf <- myDf %>% 
-      rename(ID=StudyID,DATA=Data,AGE=SampleAge,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+      dplyr::rename(ID=StudyID,DATA=Data,AGE=SampleAge,TRT=TreatmentIndex,TRTS=Treatment) %>% 
       select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName)
   }
   DebugPrint(paste0("Cohort data available in ",Cohort$Name, " at time ",StudyObj$CurrentTime," with ",nrow(myDf[!duplicated(myDf$ID),])," IDs."),2,StudyObj)

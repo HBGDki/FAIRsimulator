@@ -26,7 +26,7 @@ getAllSubjectData <- function(StudyObj,...) {
   resDf<-as.data.frame(data.table::rbindlist(dataList))
   
   ## Rename some columns to be easier to understand and create factors
-  resDf <- resDf %>% rename(Age=SampleAge,CohortID=StartNum,HAZ=Data) %>% 
+  resDf <- resDf %>% dplyr::rename(Age=SampleAge,CohortID=StartNum,HAZ=Data) %>% 
     mutate(Cycle  = factor(CycleNum,levels=sort(unique(CycleNum)),labels=paste("Cycle",sort(unique(CycleNum)))),
            Cohort = factor(CohortID,levels=sort(unique(CohortID)),labels=paste("Cohort",sort(unique(CohortID))))
     )
