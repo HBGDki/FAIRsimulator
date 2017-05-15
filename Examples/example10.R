@@ -119,7 +119,7 @@ FinalAnalysesEvent<-function(StudyObj) {
     }
     
     cohortlevels<-unique(StudyObj$CohortList %listmap% "Level")
-    browser()
+
     for (l in 1:length(cohortlevels)) {
       dflevel<-subset(df,Level==cohortlevels[l])
       
