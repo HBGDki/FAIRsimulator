@@ -4,7 +4,8 @@
 \alias{plotProbs}
 \title{plotProbs}
 \usage{
-plotProbs(StudyObj, ...)
+plotProbs(StudyObj, strProb = "UnWeightedRandomizationProbabilities",
+  cohortAgeNames = NULL, ...)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object}

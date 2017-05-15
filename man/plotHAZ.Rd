@@ -4,10 +4,12 @@
 \alias{plotHAZ}
 \title{plotHAZ}
 \usage{
-plotHAZ(StudyObj)
+plotHAZ(StudyObj, data = NULL)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
+
+\item{data}{A data frame with the data to be plotted. If omitted, the data will be extracted from the study object.}
 }
 \value{
 A \code{ggplot} object
