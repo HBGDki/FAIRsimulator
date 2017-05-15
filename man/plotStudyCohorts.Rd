@@ -5,7 +5,7 @@
 \title{plotStudyCohorts}
 \usage{
 plotStudyCohorts(StudyObj, cohortlength = 6 * 30, plotAnaTimes = FALSE,
-  wrapVariable = NULL)
+  wrapVariable = NULL, shiftWithinLevel = NULL)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
@@ -15,6 +15,8 @@ plotStudyCohorts(StudyObj, cohortlength = 6 * 30, plotAnaTimes = FALSE,
 \item{plotAnaTimes}{Logical. Should the analysis times be indicated in the plot.}
 
 \item{wrapVariable}{The name (as a string) of the variable to create facets with, using \code{facet_wrap}.}
+
+\item{shiftByLevel}{Shifting each cohort upwards the y-axis by level and this amount, default= NULL (no shift)}
 }
 \value{
 A \code{ggplot} object

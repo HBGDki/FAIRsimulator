@@ -64,7 +64,7 @@ probTemperation <- function(probs) {
 }
 
 InterimAnalyzesTime<-function(Cohort,StudyObj) {
-  DebugPrint(paste0("Check if cohort ",Cohort$Name," is about to have an interim analysis",StudyObj$CurrentTime),3,StudyObj)
+  DebugPrint(paste0("Check if cohort ",Cohort$Name," is about to have an interim analysis ",StudyObj$CurrentTime),3,StudyObj)
   TimeToPerformInterim<-FALSE
   tmp<-sum(unlist(lapply(Cohort$SubjectList,function(Subject,LastSample){
     return(as.numeric(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime)))},max(Cohort$SamplingDesign))))/Cohort$MaxNumberOfSubjects
@@ -77,6 +77,115 @@ InterimAnalyzesTime<-function(Cohort,StudyObj) {
   return(TimeToPerformInterim)
 }
 
+FinalAnalysesEvent<-function(StudyObj) {
+  DebugPrint(paste0("Check if time to do a final analyses at study time: ",StudyObj$CurrentTime),3,StudyObj)
+  if (StudyObj$CurrentTime==StudyObj$StudyDesignSettings$StudyStopTime-1) {
+    DebugPrint(paste0("Time to do a final analyses with all data at time: ",StudyObj$CurrentTime),1,StudyObj)
+    df<-getAllSubjectData(StudyObj,prevTreatment = TRUE) #Get all data that is neede for final analyses
+    ## Rename, select and order columns
+    if(length(names(df)[grep(names(df),pattern = "PTRT")]) >0) {
+      df <- df %>% 
+        rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+        select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName,matches("PTRT"))
+      for (cstr in names(df)[grep(names(df),pattern = "PTRT")]) { #Set no previous treatment to "0"
+        df[,cstr]<-ifelse(is.na(df[,cstr]),0,df[,cstr])
+      }
+    } else {
+      df <- df %>% 
+        rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+        select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName)
+    }
+    
+    df[df==-99]<-NA #Set -99 to missing
+    df<-ImputeCovariates(df,StudyObj,method=StudyObj$StudyDesignSettings$ImpMethod) #Impute missing covariates
+    
+    #Sort to get correct TRT order
+    df <- df[order(df["TRT"],df["ID"], df["AGE"]),] 
+    
+    ##### Make some covariate factors
+    df$TRT<-as.factor(df$TRT) 
+    df$SEXN<-as.factor(df$SEXN)
+    df$SANITATN<-as.factor(df$SANITATN)
+    df$AGE<-df$AGE/(12*30) #Rescale time to years
+    
+    ### If we have previous treatments
+    ptrti <- grep("PTRT",names(df))
+    if(length(ptrti)>0) {
+      
+      for(i in 1:length(ptrti)) {
+        df[,ptrti[i]] <- as.factor(df[,ptrti[i]])
+      }
+      myPTRTs <- names(df)[ptrti]
+    }
+    
+    cohortlevels<-unique(StudyObj$CohortList %listmap% "Level")
+    
+    for (l in 1:length(cohortlevels)) {
+      dflevel<-subset(df,Level==cohortlevels[l])
+      
+      #### Perform LME estimation based on some covariates and treatment effects for each level
+      if(length(ptrti)>0) {
+        
+        lmeFormula <- paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(c(StudyObj$StudyDesignSettings$Covariates,myPTRTs),collapse = " + "))
+      } else {
+        lmeFormula <- paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + "))
+      }
+      
+      lmefit <- lmer(lmeFormula,data=dflevel,REML=FALSE) # IIV on baseline only
+      
+      ##### Calculate new probabilites based on another cohort LME results
+      lmecoef<-summary(lmefit)$coefficients[,1] #Get coefficicents from LME
+      lmese<-summary(lmefit)$coefficients[,2] #Get SE from LME
+      lmecoef<-lmecoef[regexpr('AGE:TRT.*',names(lmecoef))==1]
+      lmese<-lmese[regexpr('AGE:TRT.*',names(lmese))==1]
+      print(lmefit)
+      ### Get first cohort with level = l
+      if (!is.null(StudyObj$CohortList)) {
+        for (i in 1:length(StudyObj$CohortList)) {
+          if (StudyObj$CohortList[[i]]$Level==l) {
+            Cohort<-StudyObj$CohortList[[i]]
+            break
+          }
+        }
+
+        if ((length(lmecoef)+1)!=length(Cohort$RandomizationProbabilities)) {
+          lmecoefnew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+          lmesenew<-rep(0,length(Cohort$RandomizationProbabilities)-1)
+          for (i in 1:(length(Cohort$RandomizationProbabilities)-1)) {
+            iIndex<-which(names(lmecoef)==paste0("AGE:TRT",i+1))
+            if (length(iIndex)!=0) {
+              lmecoefnew[i]<-lmecoef[iIndex]
+              lmesenew[i]<-lmese[iIndex]
+            }
+          }
+          names(lmecoefnew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+          names(lmesenew)<-paste0("AGE:TRT",2:length(Cohort$RandomizationProbabilities))
+          lmecoef<-lmecoefnew
+          lmese<-lmesenew
+        }
+      }
+      #Get probability of beeing best
+      probs <- GetNewRandomizationProbabilities(trtcoeff=lmecoef,trtse=lmese,
+                                                StudyObj$StudyDesignSettings$iNumPosteriorSamples) #Calculate randomization probs based on posterior distribution
+      
+      ## Apply any probability temperation function, e.g. sqrt
+      probstemp <- StudyObj$StudyDesignSettings$probTemperation(probs)
+    
+      ## Save finala analyses output
+      FinalAnalyses<-list()
+      
+      FinalAnalyses$Level = l
+      FinalAnalyses$Time = StudyObj$CurrentTime
+      FinalAnalyses$LMEFit<-lmefit
+      FinalAnalyses$UnWeightedUpdateProbabilities<-probs
+      FinalAnalyses$UnWeightedTemperatedUpdateProbabilities<-probstemp
+      FinalAnalyses$LMECoeff<-lmecoef
+      FinalAnalyses$LMESE<-lmese
+      StudyObj$FinalAnalysesList[[length(StudyObj$FinalAnalysesList)+1]]<-FinalAnalyses
+    }
+  }
+  return(StudyObj)
+}
 
 
 StudyObjIni <- createStudy(
@@ -100,7 +209,7 @@ StudyObjIni <- createStudy(
 )
 
 StudyObjIni$EventList[[length(StudyObjIni$EventList)+1]]<-AddNewTwelveMonthCohortEvent
-
+StudyObjIni$EventList[[length(StudyObjIni$EventList)+1]]<-FinalAnalysesEvent
 
 StudyObj <- AdaptiveStudy(StudyObjIni)
 
