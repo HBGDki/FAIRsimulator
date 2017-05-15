@@ -17,15 +17,14 @@ getItemsFromSubjects <- function(cohortObj,...) {
   if(class(cohortObj) != "cohort") stop("cohortObj needs to be a cohort object")
   
   subjList <- subjects(cohortObj)
-  # browser()
-  resDf <- NULL
+  dataList<-list()
+  i<-1
   for(subj in subjList) {
-    if(is.null(resDf)) {
-      resDf <- getSubjectItems(subj,...)
-    } else {
-      resDf <- rbind(resDf,getSubjectItems(subj,...))
-    }
+    dataList[[i]]<-getSubjectItems(subj,...)
+    i<-i+1
   }
+  resDf<-as.data.frame(data.table::rbindlist(dataList))
+  
   
   resDf$CohortName       <- cohortObj$Name
   resDf$CycleNum         <- cohortObj$CycleNum

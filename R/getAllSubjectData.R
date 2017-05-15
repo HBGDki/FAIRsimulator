@@ -16,16 +16,14 @@ getAllSubjectData <- function(StudyObj,...) {
   if(class(StudyObj) != "study") stop("studyObj needs to be a study object")
   
   myCohorts <- cohorts(StudyObj)
-  resDf     <- NULL
-  
+  i<-1
+  dataList<-list()
   for(cohrt in myCohorts) {
-    if(is.null(resDf)) {
-      resDf <- getItemsFromSubjects(cohrt,...)
-    } else {
-      resDf <- rbind(resDf,getItemsFromSubjects(cohrt,...))
-    }
-    #resDf$CohortStartTime <- cohrt$CohortStartTime
+    dataList[[i]]<-getItemsFromSubjects(cohrt,...)
+    i<-i+1
   }
+  
+  resDf<-as.data.frame(data.table::rbindlist(dataList))
   
   ## Rename some columns to be easier to understand and create factors
   resDf <- resDf %>% rename(Age=SampleAge,CohortID=StartNum,HAZ=Data) %>% 
