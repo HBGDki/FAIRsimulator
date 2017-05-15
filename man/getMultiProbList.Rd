@@ -4,7 +4,8 @@
 \alias{getMultiProbList}
 \title{getMultiProbList}
 \usage{
-getMultiProbList(multiStudObj, ncores = 1, ...)
+getMultiProbList(multiStudObj, ncores = 1,
+  strProb = "UnWeightedRandomizationProbabilities", cohortAgeNames = NULL)
 }
 \arguments{
 \item{multiStudObj}{A list of FAIRsimulator \code{study} objects}

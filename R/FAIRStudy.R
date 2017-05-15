@@ -535,7 +535,6 @@ GetTreatmentRandomizations<-function(Num,Cohort,StudyObj) { #Simple uniform rand
     lowprob<-0
     highprob<-0
     if (any(is.nan(Cohort$RandomizationProbabilities))) {
-      browser()
       print(paste0("Cohort ",Cohort$Name))
       print(Cohort$RandomizationProbabilities)
     }
@@ -998,9 +997,6 @@ MoveCompletedSubjects<-function(StudyObj) {
           StudyObj$CohortList[[i]]$ChildCohort<-length(StudyObj$CohortList)+length(NewChildCohortList)+1 #Add reference to the new cohort as a child cohort
           NewChildCohort$ParentCohort<-i #Add a reference to old Cohort as a parent cohort
           NewChildCohort$ProbabilityCohort<-NewCohortLinkIndex #The cohort where to update the probabilities from
-          # browser()
-          # NewChildCohort<-MoveSubjects(Cohort,NewChildCohort,StudyObj)          
-          
           NewChildCohortList[[length(NewChildCohortList)+1]]<-NewChildCohort
         } else {
           # StudyObj$CohortList[[Cohort$ChildCohort]]<-MoveSubjects(Cohort,StudyObj$CohortList[[Cohort$ChildCohort]],StudyObj)          
@@ -1237,7 +1233,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
 #' \dontrun{
 #' probData <- getProbData(StudyObj)
 #' }
-getProbData <- function(StudyObj,strProb="UpdateProbabilities",...) {
+getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",...) {
   
   allData <- getAllSubjectData(StudyObj)
   resDf   <- getCohortAgeRange(StudyObj,...)  
@@ -1260,7 +1256,7 @@ getProbData <- function(StudyObj,strProb="UpdateProbabilities",...) {
   
   randProbs <- allData %>% distinct(CohortAge,CohortName,.keep_all=TRUE) %>% dplyr::select(CohortAge,CohortName,RandStudyTime) %>% left_join(probs,.,by="CohortName")
   
-  randProbs$TreatmentName <- factor(randProbs$TreatmentName,levels=unlist(StudyObj$StudyDesignSettings$Treatments))
+  randProbs$TreatmentName <-factor(randProbs$TreatmentName,levels=unique(unlist(StudyObj$StudyDesignSettings$Treatments)))
   
   return(randProbs)
 }
@@ -1279,9 +1275,10 @@ getProbData <- function(StudyObj,strProb="UpdateProbabilities",...) {
 #' \dontrun{
 #' plotProbs(StudyObj)
 #' }
-plotProbs <- function(StudyObj,...) {
+plotProbs <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL,...) {
   
-  probData <- getProbData(StudyObj,...)
+  if(is.null(cohortAgeNames)) stop("Need to specify the cohortAgeNames.")
+  probData <- getProbData(StudyObj,strProb=strProb,cohortAgeNames=cohortAgeNames)
   xs <- split(probData,f = probData$CohortAge)
   
   plotList <- list()
@@ -1360,7 +1357,9 @@ probTemperation <- function(probs) {
 #'
 #' myMultStud <- runMultiSim(StudyOnjIni,iter=10,ncores=2)
 #' }
-runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,...) {
+runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL) {
+  
+  if(extractProbs & is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
   
   ## Start the parallell engine if ncores > 1
   if(ncores>1) {registerDoParallel(cores=ncores)}
@@ -1370,7 +1369,8 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,...) {
   
   ## Extract the probabilities if requested
   if(extractProbs) {
-    probDf  <- getMultiProbList(myRes,ncores=ncores,...)
+    probDf  <- getMultiProbList(myRes,ncores=ncores,cohortAgeNames=cohortAgeNames,strProb=strProb)
+      
     retList <- list(studList = myRes,probDf = probDf)
   } else {
     retList <- list(studList = myRes)
@@ -1395,13 +1395,15 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,...) {
 #' \dontrun{
 #' getMultiProbList(multiStudObj,ncores=2,strProb="UnWeightedRandomizationProbabilities") 
 #' }
-getMultiProbList <- function(multiStudObj,ncores=1,...) {
+getMultiProbList <- function(multiStudObj,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL) {
+  
+  if(is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
   
   ## Start the parallell engine if ncores > 1
   if(ncores>1) {registerDoParallel(cores=ncores)}
   
   ## get a list of all probability data
-  probList <- foreach(i=1:length(multiStudObj)) %dopar% getProbData(multiStudObj[[i]],...)
+  probList <- foreach(i=1:length(multiStudObj)) %dopar% getProbData(multiStudObj[[i]],cohortAgeNames=cohortAgeNames,strProb=strProb)
   
   ## Create one data frame of all the probability data frames
   probDf <- bind_rows(probList)
@@ -1455,6 +1457,7 @@ plotMultiProb <- function(probDf,ylb="Randomization probability",pup = 0.95,pdo=
     labs(color=NULL,fill=NULL) +
     xlab("Study time (months)") +
     ylab(ylb) +
+    scale_x_continuous(breaks=c(0,6,12,18)) +
     facet_grid(CohortAge~TreatmentName)
   
   for(i in 2:length(xs)) {

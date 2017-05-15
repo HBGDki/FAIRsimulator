@@ -1,0 +1,235 @@
+---
+title: "Model 1"
+output:
+  html_document: 
+    number_sections: yes
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+      toc_depth: 3
+---
+
+# Model 1
+
+```{r,message=FALSE, warning=FALSE,echo=FALSE}
+library(FAIRsimulator)
+set.seed(3243)
+theme_set(theme_gray(base_size=14))
+```
+
+## Treatments
+
+* Cell 0 (SoC)
+    - Counseling
+    - 6 month HAZ effect: 0
+* Cell 1
+    - Counseling
+    - Food: 7.5% PER, 10% ASP
+    - Iron + Vitamin A + Zinc
+    - 6 month HAZ effect: 0.0633
+* Cell 2
+    - Counseling
+    - Food: 15% PER, 30% ASP
+    - Multiple micronutrient supplementation
+    - 6 month HAZ effect: 0.1037
+* Cell 3
+    - Counseling
+    - Food: 15% PER, 30% ASP
+    - Multiple micronutrient supplementation
+    - Antibiotics + Probiotics
+    - 6 month HAZ effect: 0.1574
+* Cell 4
+    - Counseling
+    - Food: 15% PER, 30% ASP
+    - Multiple micronutrient supplementation
+    - Antibiotics + Probiotics
+    - WASH Intensified
+    - Psychosocial care and support
+    - 6 month HAZ effect: 0.1687
+
+## Study design settings
+
+These study design options were used for the current set of simulations:
+
+* 3 recruitment cycles: 0, 6, and 12 months (study time).
+* 2 recruitment age groups: 6 and 12 months (age).
+* Instantaneous recruitment (all children recruited on day 1).
+* The initial randomization set to 1:1:1:1:1.
+* The minimum randomization probability for SoC is 20%.
+* Treatment arms with a probability less than 10% *before* adjusting for the minimum SoC randomization probability is dropped.
+* All available data up and including the timepoint for the interim analyses is used to update the probabilities.
+* The dropout rate is approximately 20%/6 months.
+* Bi-monthly HAZ observations.
+* Interim analyses every 6 months.
+* Square root probability updates (small probabilities are inflated)
+
+```{r, echo=FALSE,cache=TRUE,message=FALSE,warning=FALSE,results="hide"}
+
+## One adapted cohort
+AddNewSixMonthCohortEvent<-function(StudyObj) {
+  #Note - assuming birth cohort is first element in StudyDesignSettings
+  
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      Cohort<-StudyObj$CohortList[[i]]
+      if ((Cohort$Active==FALSE && Cohort$RandomizationAgeRange[1]==6*30 && Cohort$CycleNum==1 && Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) || #If this cohort just ended and its time to add a new cohort
+         (Cohort$Active==TRUE && Cohort$RandomizationAgeRange[1]==6*30 && Cohort$CycleNum==1 && Cohort$CohortStartTime+6*30==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts))
+        {
+        BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==6*30}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
+        NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)
+        NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
+        NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
+        DebugPrint(paste0("Create new 6 month cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+        NewChildCohort$RandomizationProbabilities<-Cohort$UpdateProbabilities #Use the latest probabilities from previous birth cohort
+        NewChildCohort$UnWeightedRandomizationProbabilities<-Cohort$UnWeightedUpdateProbabilities
+        StudyObj$CohortList[[(length(StudyObj$CohortList)+1)]]<-NewChildCohort
+        break
+      }
+    }
+  }
+  return(StudyObj)
+}
+
+## One adapted cohort
+AddNewTwelveMonthCohortEvent<-function(StudyObj) {
+  #Note - assuming birth cohort is first element in StudyDesignSettings
+  
+  if (!is.null(StudyObj$CohortList)) {
+    for (i in 1:length(StudyObj$CohortList)) {
+      Cohort<-StudyObj$CohortList[[i]]
+      if (Cohort$Active==FALSE && Cohort$RandomizationAgeRange[1]==12*30 && Cohort$CycleNum==1 && Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) #if this cohort just ended and its time to add a new cohort
+      {
+        BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==12*30}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
+        NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)
+        NewChildCohort$StartNum <- max(StudyObj$CohortList %listmap% "StartNum")+1
+        NewChildCohort$Name<-paste0("C-",NewChildCohort$StartNum,"-",1," [",Cohort$RandomizationAgeRange[1]/30,"-",Cohort$RandomizationAgeRange[2]/30,"m @ rand]")
+        DebugPrint(paste0("Create new 12 month cohort ",NewChildCohort$Name," based on probabilities in ",Cohort$Name," at time: ",StudyObj$CurrentTime),1,StudyObj)
+        NewChildCohort$RandomizationProbabilities<-Cohort$UpdateProbabilities #Use the latest probabilities from previous birth cohort
+        NewChildCohort$UnWeightedRandomizationProbabilities<-Cohort$UnWeightedUpdateProbabilities
+        StudyObj$CohortList[[(length(StudyObj$CohortList)+1)]]<-NewChildCohort
+        break
+      } 
+        
+    }
+  }
+  return(StudyObj)
+}
+
+
+probTemperation <- function(probs) {
+  probs <- sqrt(probs)/sum(sqrt(probs))
+  return(probs)
+}
+
+InterimAnalyzesTime<-function(Cohort,StudyObj) {
+  DebugPrint(paste0("Check if cohort ",Cohort$Name," is about to have an interim analysis",StudyObj$CurrentTime),3,StudyObj)
+  TimeToPerformInterim<-FALSE
+  tmp<-sum(unlist(lapply(Cohort$SubjectList,function(Subject,LastSample){
+    return(as.numeric(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime)))},max(Cohort$SamplingDesign))))/Cohort$MaxNumberOfSubjects
+  if (length(tmp)==0) tmp<-0
+  
+  if (Cohort$RandomizationAgeRange[1]==6*30 && (StudyObj$CurrentTime==6*30-1 || StudyObj$CurrentTime==18*30-1 )) {
+    DebugPrint(paste0("Time to do an interim analyses for cohort ",Cohort$Name," at time: ",StudyObj$CurrentTime," (",round(tmp*100,1)," % subjects completed)"),1,StudyObj)
+    TimeToPerformInterim<-TRUE
+  }
+  return(TimeToPerformInterim)
+}
+
+
+
+StudyObjIni <- createStudy(
+  nCohorts                       = 2,
+  recruitmentAges                = list(c(6,7)*30,c(12,13)*30),
+  nSubjects                      = c(500,500),
+  cohortStartTimes               = c(0*30,0*30),
+  newCohortLink                  = list(NULL,NULL),
+  Recruitmentfunction            = function(...) {return(5000)},
+  samplingDesign                 = list(seq(0,12,by=2)*30,seq(0,6,by=2)*30),
+  studyStopTime                  = 18*30+5,
+  latestTimeForNewBirthCohorts   = 14*30+1,
+  treatments                     = list(c("SoC-1","Cell 1","Cell 2"," Cell 3"," Cell 4"),c("SoC-1","Cell 1","Cell 2"," Cell 3"," Cell 4")),
+  effSizes                       = list(c(0,0.0633,0.1037,0.1574,0.1687),c(0,0.0633,0.1037,0.1574,0.1687)),
+  randomizationProbabilities     = list(rep(0.20,5),rep(0.20,5)),
+  minAllocationProbabilities     = list(c(0.2,rep(0,4)),c(0.2,rep(0,4))),
+  probTemperationFunction        = probTemperation,
+  AddNewBirthCohortEventFunction = AddNewSixMonthCohortEvent,
+  interimAnalyzesTimeFunction    = InterimAnalyzesTime,
+  accumulatedData = TRUE
+)
+
+StudyObjIni$EventList[[length(StudyObjIni$EventList)+1]]<-AddNewTwelveMonthCohortEvent
+
+
+StudyObj <- AdaptiveStudy(StudyObjIni)
+```
+
+```{r,warning=FALSE,message=FALSE,echo=FALSE}
+
+p <- plotStudyCohorts(StudyObj,plotAnaTimes = T,shiftWithinLevel = 1)
+
+p + scale_y_continuous(breaks=c(7.5,13.5),labels=c("6-18 months","12-18 months")) +
+  ylab(NULL) +
+  theme(legend.position="none")
+```
+
+## Results
+
+
+The simulated HAZ data.
+
+```{r,echo=FALSE}
+allData <- getAllSubjectData(StudyObj,scalarItems="AgeAtRand",covariates=NULL) 
+
+allData$Cohort2 <- as.character(allData$Cohort)
+allData$Cohort2 <- factor(allData$Cohort2,levels=c("Cohort 2","Cohort 4","Cohort 6","Cohort 1","Cohort 3","Cohort 5"))
+plotHAZ(StudyObj,data=allData) + aes(color=Cohort) + facet_wrap(~Cohort2) + theme(legend.position="none") + scale_x_continuous(breaks=c(6,12,18))
+```
+
+The randomization probabilties *before* adjusting for the minimum SoC randomization probability.
+
+```{r,warning=FALSE,echo=FALSE,message=FALSE,error=FALSE,fig.width=9}
+plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
+```
+
+
+The randomization probabilties after adjusting for the minimum SoC randomization probability.
+
+```{r,warning=FALSE,echo=FALSE,message=FALSE,error=FALSE,fig.width=9}
+plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities")
+# getProbData(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities")
+# 
+# plotProbs(StudyObj,cohortAgeNames=c("6-12 months","12-18 months"))
+```
+
+
+#3 Repeating the study multiple times
+
+```{r runMult,multiRun,cache=TRUE,warning=FALSE,echo=FALSE}
+iter   <- 100
+ncores <- 7
+
+myMultStudAlt <- runMultiSim(StudyObjIni,iter=iter,ncores=ncores,cohortAgeNames=c("6-12 months","12-18 months"),strProb="UnWeightedRandomizationProbabilities")
+myMultStud <- myMultStudAlt
+```
+
+```{r getProbs, cache=TRUE,dependson="runMult",echo=FALSE}
+probDfUnWeightedRandProb <- myMultStud[[2]]
+probDfRandProb <- getMultiProbList(myMultStud[[1]],cohortAgeNames=c("6-12 months","12-18 months"),strProb="RandomizationProbabilities",ncore=ncores)
+```
+
+Running the study multiple time (in this case `r iter` times) allows for the computation of performance statistics.
+
+The randomization probabilties *after*before* adjusting for the minimum SoC randomization probability. The shaded areas are the 95% prediction intervals.
+
+```{r,dependson="getProbs",echo=FALSE}
+plotMultiProb(probDfUnWeightedRandProb)
+```
+
+The randomization probabilties after adjusting for the minimum SoC randomization probability. The shaded areas are the 95% prediction intervals.
+
+```{r,dependson="getProbs",echo=FALSE}
+plotMultiProb(probDfRandProb)
+```
+

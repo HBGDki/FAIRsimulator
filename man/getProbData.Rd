@@ -4,7 +4,7 @@
 \alias{getProbData}
 \title{getProbData}
 \usage{
-getProbData(StudyObj, strProb = "UpdateProbabilities", ...)
+getProbData(StudyObj, strProb = "UnWeightedRandomizationProbabilities", ...)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object}
