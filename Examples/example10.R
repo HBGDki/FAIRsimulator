@@ -85,14 +85,14 @@ FinalAnalysesEvent<-function(StudyObj) {
     ## Rename, select and order columns
     if(length(names(df)[grep(names(df),pattern = "PTRT")]) >0) {
       df <- df %>% 
-        rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+        dplyr::rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
         select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName,matches("PTRT"))
       for (cstr in names(df)[grep(names(df),pattern = "PTRT")]) { #Set no previous treatment to "0"
         df[,cstr]<-ifelse(is.na(df[,cstr]),0,df[,cstr])
       }
     } else {
       df <- df %>% 
-        rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
+        dplyr::rename(ID=StudyID,DATA=HAZ,AGE=Age,TRT=TreatmentIndex,TRTS=Treatment) %>% 
         select(ID,DATA,AGE,TRT,TRTS,one_of(StudyObj$StudyDesignSettings$Covariates),Level,CohortName)
     }
     
@@ -119,7 +119,7 @@ FinalAnalysesEvent<-function(StudyObj) {
     }
     
     cohortlevels<-unique(StudyObj$CohortList %listmap% "Level")
-    
+
     for (l in 1:length(cohortlevels)) {
       dflevel<-subset(df,Level==cohortlevels[l])
       
