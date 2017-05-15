@@ -265,7 +265,7 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   
   df<-GetCohortData(Cohort,StudyObj,accumulatedData = StudyObj$StudyDesignSettings$AccumulatedData) #Get Cohorts data up to this point in time
   df[df==-99]<-NA #Set -99 to missing
-  df<-ImputeCovariates(df,StudyObj,method=StudyObj$StudyDesignSettings$ImpMethod) #Impute missgin covariates
+  df<-ImputeCovariates(df,StudyObj,method=StudyObj$StudyDesignSettings$ImpMethod) #Impute missing covariates
   
   
   
