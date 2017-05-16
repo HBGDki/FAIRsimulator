@@ -74,8 +74,16 @@ AddNewSixMonthCohortEvent<-function(StudyObj) {
   if (!is.null(StudyObj$CohortList)) {
     for (i in 1:length(StudyObj$CohortList)) {
       Cohort<-StudyObj$CohortList[[i]]
-      if ((Cohort$Active==FALSE && Cohort$RandomizationAgeRange[1]==6*30 && Cohort$CycleNum==1 && Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) || #If this cohort just ended and its time to add a new cohort
-         (Cohort$Active==TRUE && Cohort$RandomizationAgeRange[1]==6*30 && Cohort$CycleNum==1 && Cohort$CohortStartTime+6*30==StudyObj$CurrentTime && StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts))
+      if ((Cohort$Active==FALSE && 
+           Cohort$RandomizationAgeRange[1]==6*30 && 
+           Cohort$CycleNum==1 && 
+           Cohort$CohortStartTime+Cohort$CurrentTime==StudyObj$CurrentTime && 
+           StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts) || #If this cohort just ended and its time to add a new cohort
+            (Cohort$Active==TRUE && 
+             Cohort$RandomizationAgeRange[1]==6*30 && 
+             Cohort$CycleNum==1 && 
+             Cohort$CohortStartTime+6*30==StudyObj$CurrentTime && 
+             StudyObj$CurrentTime<=StudyObj$StudyDesignSettings$LatestTimeForNewBirthCohorts))
         {
         BirthCohortIndex<-which(unlist(lapply(StudyObj$StudyDesignSettings$CohortAgeRange,function(x) {x[1]==6*30}))==TRUE) #Get the birth cohort index (i.e. lower AgeRangeAtRandomization=0)
         NewChildCohort<-NewCohort(StudyObj,CohortNum=BirthCohortIndex)

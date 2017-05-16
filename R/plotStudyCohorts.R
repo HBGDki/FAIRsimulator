@@ -27,12 +27,12 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapV
   
   
   if (!is.null(shiftWithinLevel)) {
-   for (i in 1:max(cohortdetails$Level)) {
-    if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
-      cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
-      cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
+    for (i in 1:max(cohortdetails$Level)) {
+      if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
+        cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
+        cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
+      }
     }
-   }
   }
   
   p <- ggplot(data=cohortdetails)
@@ -50,8 +50,26 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,wrapV
   p <- p + scale_x_continuous(breaks = seq(0,48,by=6),limits= c(0, max((cohortdetails$CohortStartTime+cohortdetails$CohortDuration)/30)))
   
   if(plotAnaTimes) {
+    
     anaTime        <- sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE)
-    anaTime        <- data.frame(lapply(anaTime,function(x) {ifelse(is.null(x),return(NA),return(x))}))
+    
+    ## Need to handle when there are ab unequal number if IAs in different cohorts
+    maxIA <- max(unlist(lapply(anaTime,function(x) length(x)))) # Count the max number of IAs
+    
+    myFun <- function(x,maxIA) {
+      numElem <- length(x)
+      
+      if(is.null(x)) {
+        x <- NA
+      } else if(numElem < maxIA) {
+        x[(numElem+1):maxIA] <- x[numElem]
+      }
+      return(x)
+    }
+    
+    anaTime <- data.frame(lapply(anaTime,FUN=myFun,maxIA))
+    
+    #anaTime        <- data.frame(lapply(anaTime,function(x) {ifelse(is.null(x),return(NA),return(x))}))
     #anaTime        <- data.frame(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
     names(anaTime) <- names(sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE))
     anaTime        <- gather(anaTime,"Name","AnalysisTimes") %>%  distinct(Name,AnalysisTimes)
