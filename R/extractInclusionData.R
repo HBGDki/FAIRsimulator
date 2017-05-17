@@ -32,7 +32,7 @@ extractInclusionData <- function(StudyObj) {
       ungroup %>% 
       mutate(Recruited = cumsum(n)) %>% 
       dplyr::select(-n) %>% 
-      rename(Day=RandStudyTime)
+      dplyr::rename(Day=RandStudyTime)
     
     dropout <- cohort1 %>% 
       filter(!is.na(DropoutStudyTime)) %>% 
@@ -42,7 +42,7 @@ extractInclusionData <- function(StudyObj) {
       ungroup %>% 
       mutate(Dropout = cumsum(n)) %>% 
       dplyr::select(-n) %>% 
-      rename(Day=DropoutStudyTime)
+      dplyr::rename(Day=DropoutStudyTime)
     
     completed <- 
       cohort1 %>% 
@@ -54,7 +54,7 @@ extractInclusionData <- function(StudyObj) {
       ungroup %>% 
       mutate(Completed = cumsum(n)) %>% 
       dplyr::select(-n) %>% 
-      rename(Day = StudySampleTime)
+      dplyr::rename(Day = StudySampleTime)
     
     
     resDf <- data.frame(Day=0:maxStudyTime)
@@ -66,7 +66,7 @@ extractInclusionData <- function(StudyObj) {
       mutate(Remaining = Recruited-Dropout-Completed,
              CohortDay = Day - cohortStartTime,CohortID=cohortID,
              CycleNum=cycleNum,CohortStartTime=cohortStartTime) %>% 
-      rename(StudyDay = Day)
+      dplyr::rename(StudyDay = Day)
     
     if(is.null(allRes)) {
       allRes <- resDf
