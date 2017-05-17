@@ -207,6 +207,8 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
     myDf <- getItemsFromSubjects(Cohort,
                                  scalarItems=c("StudyID","TreatmentIndex","Treatment"),
                                  longitudinalItems = c("Data","SampleAge"))
+    
+    if(is.null(myDf)) return(NULL) # No subjects in cohort
   } else {
     
     # Loop over the other cohorts and get the data from those of the same level
@@ -215,6 +217,8 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
                                  longitudinalItems = c("Data","SampleAge"),
                                  prevTreatment = TRUE)
     
+    if(is.null(myDf)) return(NULL) # No subjects in cohort
+   
     myCohorts <- cohorts(StudyObj)
     
     for(i in 1:length(myCohorts)) {
@@ -225,6 +229,8 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
                                     longitudinalItems = c("Data","SampleAge"),prevTreatment = TRUE)
       
       myDf <- merge(myDf,newDf, all=TRUE)
+      
+     
     }
   }
   
@@ -263,6 +269,9 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   DebugPrint(paste0("Doing an analysis based on data in cohort ",Cohort$Name," at time ",StudyObj$CurrentTime),1,StudyObj)
   
   df<-GetCohortData(Cohort,StudyObj,accumulatedData = StudyObj$StudyDesignSettings$AccumulatedData) #Get Cohorts data up to this point in time
+  
+  if(is.null(df) || nrow(df)==0) return(StudyObj) # No subjects in cohort
+
   df[df==-99]<-NA #Set -99 to missing
   df<-ImputeCovariates(df,StudyObj,method=StudyObj$StudyDesignSettings$ImpMethod) #Impute missing covariates
   

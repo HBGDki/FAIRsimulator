@@ -24,7 +24,7 @@ getItemsFromSubjects <- function(cohortObj,...) {
     i<-i+1
   }
   resDf<-as.data.frame(data.table::rbindlist(dataList))
-  
+  if(nrow(resDf) == 0) return(NULL) # If there aren't any subjects in the cohort
   
   resDf$CohortName       <- cohortObj$Name
   resDf$CycleNum         <- cohortObj$CycleNum

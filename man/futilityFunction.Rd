@@ -17,7 +17,7 @@ futilityFunction(probs, Cohort, StudyObj,
 \item{minSubj}{The cutoff for the number of subjects expected to be randomised to a treatment.}
 }
 \value{
-A vector of updated probabilities.
+A List with vector of updated probabilities and futility used (TRUE/FALSE)
 }
 \description{
 Function to determine if treatments are futile.

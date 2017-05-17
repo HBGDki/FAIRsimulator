@@ -5,7 +5,9 @@
 \title{plotStudyCohorts}
 \usage{
 plotStudyCohorts(StudyObj, cohortlength = 6 * 30, plotAnaTimes = FALSE,
-  wrapVariable = NULL, shiftWithinLevel = NULL)
+  plotFutilityTimes = FALSE, plotFinalAnalysis = FALSE,
+  wrapVariable = NULL, shiftWithinLevel = NULL,
+  includeCohortStopTime = TRUE)
 }
 \arguments{
 \item{StudyObj}{A FAIRsimulator \code{study} object.}
