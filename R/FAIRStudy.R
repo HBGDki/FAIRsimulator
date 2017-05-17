@@ -292,11 +292,23 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   if(length(ptrti)>0) {
     
     lmeFormula <- paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(c(StudyObj$StudyDesignSettings$Covariates,myPTRTs),collapse = " + "))
+    lmFormula <- paste0("DATA~1 + AGE + AGE:TRT + ",paste0(c(StudyObj$StudyDesignSettings$Covariates,myPTRTs),collapse = " + "))
   } else {
     lmeFormula <- paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + "))
+    lmFormula <- paste0("DATA~1 + AGE + AGE:TRT +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + "))
   }
   
-  lmefit <- lmer(lmeFormula,data=df,REML=FALSE) # IIV on baseline only
+  errFun <- function(err) {
+    DebugPrint(paste0("Cannot do an LME analysis, doing an LM analysis instead at time ",StudyObj$CurrentTime),1,StudyObj)
+    DebugPrint(paste0("Error from LME analysis: ",err),1,StudyObj)
+    lmfit <- lm(lmFormula,data=df)
+    return(lmfit)
+  }
+  
+  lmefit <- tryCatch({lmer(lmeFormula,data=df,REML=FALSE)},error = errFun)
+  
+  
+   # IIV on baseline only
   
   #lmefit <- lmer(paste0("DATA~1 + AGE + AGE:TRT + (AGE|ID) +",paste0(StudyObj$StudyDesignSettings$Covariates,collapse = " + ")),data=df,REML=FALSE) # IIV on baseline only
   
@@ -336,7 +348,18 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   
   ### Futility - returns prob 0 for futile treatments
   if(StudyObj$StudyDesignSettings$CheckFutility == "before") {
-    probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    tmpprobs<-probs
+    tmp<-StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    probs <-tmp[[1]]
+    if (tmp[[2]]==TRUE) {
+      Futility<-list()
+      Futility$PreviousProbability<-tmpprobs
+      Futility$FutileProbability<-probs
+      Futility$StudyTime<-StudyObj$CurrentTime
+      Futility$CohortTime<-Cohort$CurrentTime
+      Futility$CohortName<-Cohort$Name
+      StudyObj$FutilityList[[length(StudyObj$FutilityList)+1]]<-Futility
+    }
   }
   
   ## Adjust the probabilities so that minimum allocation is honored
@@ -344,7 +367,18 @@ UpdateProbabilities<-function(Cohort,StudyObj,cohortindex=NULL) {
   
   ### Futility - returns prob 0 for futile treatments
   if(StudyObj$StudyDesignSettings$CheckFutility == "after") {
-    probs <- StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    tmpprobs<-probs
+    tmp<-StudyObj$Futilityfunction(probs,Cohort,StudyObj)
+    probs <-tmp[[1]]
+    if (tmp[[2]]==TRUE) {
+      Futility<-list()
+      Futility$PreviousProbability<-tmpprobs
+      Futility$FutileProbability<-probs
+      Futility$StudyTime<-StudyObj$CurrentTime
+      Futility$CohortTime<-Cohort$CurrentTime
+      Futility$CohortName<-Cohort$Name
+      StudyObj$FutilityList[[length(StudyObj$FutilityList)+1]]<-Futility
+    }
   }
   
   Cohort$UpdateProbabilities<-probs #The latest probability updates
@@ -1153,13 +1187,14 @@ InitEvent <- function(StudyObj) {
 #' @details The function checks the expected number of subjects to be randomised to a particular treatment given the probabilities in \code{probs}. Any treatment that has an expected number of subjects 
 #' lower than or equal to \code{minSubj} will have their randomisation probabilitiy set to 0. The remaining probabilities will be adjusted to add up to 1.
 #'
-#' @return A vector of updated probabilities.
+#' @return A List with vector of updated probabilities and futility used (TRUE/FALSE)
 #' @export
 #'
 #' @examples
 futilityFunction <- function(probs,Cohort,StudyObj,minFutProb=StudyObj$StudyDesignSettings$MinimumFutilityProbability) {
+  anyfutile<-any(probs<=minFutProb)
   probs <- updateProbs(StudyObj,ifelse(probs<=minFutProb,0,probs),Cohort)
-  return(probs)
+  return(list(probs),anyfutile)
 }
 
 #' updateProbs
