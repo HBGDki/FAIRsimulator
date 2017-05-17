@@ -65,7 +65,7 @@ CohortCompleted<-function(Cohort,StudyObj) {
   
   ###All subjects are recruited (now assuming that this will never happen with 2nd statement) && all subjects have dropped out or have had the last samplingtime
   ###Cohort$MaxNumberOfSubjects==Cohort$NumberOfRecruitedSubjects &&
-  if (all(lapply(Cohort$SubjectList,function(Subject,LastSample){
+  if (length(Cohort$SubjectList)!=0 && all(lapply(Cohort$SubjectList,function(Subject,LastSample){
     return(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime))
   },max(Cohort$SamplingDesign))==TRUE)) {
     DebugPrint(paste0("Cohort ",Cohort$Name," is completed at time: ",StudyObj$CurrentTime),1,StudyObj)
@@ -1290,7 +1290,6 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
   
   treatnames        <- data.frame(myCohorts %listmap% "Treatments")
   names(treatnames) <- cohrtNams
-  
   
   probs      <- probs      %>%   gather(key="CohortName",value="Prob") 
   treatnames <- treatnames %>%   gather(key="CohortName",value="TreatmentName") 
