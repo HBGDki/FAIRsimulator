@@ -1279,6 +1279,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
 getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",...) {
   
   allData <- getAllSubjectData(StudyObj)
+  
   resDf   <- getCohortAgeRange(StudyObj,...)  
   allData <- left_join(allData,resDf,by="CohortName")
   
@@ -1296,7 +1297,7 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
   
   probs$TreatmentName <- treatnames$TreatmentName
   
-  randProbs <- allData %>% distinct(CohortAge,CohortName,.keep_all=TRUE) %>% dplyr::select(CohortAge,CohortName,RandStudyTime) %>% left_join(probs,.,by="CohortName")
+  randProbs <- allData %>% distinct(CohortAge,CohortName,.keep_all=TRUE) %>% dplyr::select(CohortAge,CohortName,CohortStartTime) %>% left_join(probs,.,by="CohortName")
   
   randProbs$TreatmentName <-factor(randProbs$TreatmentName,levels=unique(unlist(StudyObj$StudyDesignSettings$Treatments)))
   
@@ -1325,7 +1326,7 @@ plotProbs <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",co
   
   plotList <- list()
   
-  plotList[[1]] <- ggplot(xs[[1]],aes(RandStudyTime/30,Prob,group=TreatmentName,color=TreatmentName)) +
+  plotList[[1]] <- ggplot(xs[[1]],aes(CohortStartTime/30,Prob,group=TreatmentName,color=TreatmentName)) +
     geom_point() +
     geom_line() +
     theme(legend.position="top") +
@@ -1490,7 +1491,7 @@ plotMultiProb <- function(probDf,ylb="Randomization probability",pup = 0.95,pdo=
   
   ## Compute the plot data
   sumProbData <- probDf %>% 
-    group_by(CohortAge,TreatmentName,RandStudyTime) %>% 
+    group_by(CohortAge,TreatmentName,CohortStartTime) %>% 
     summarise(Mean=mean(Prob),Up=up95(Prob),Down=do05(Prob)) 
   
   ## To get legends for each age cohort we need to create separate graphs for the. We'll split the data and create the graphs and then print them 
@@ -1500,7 +1501,7 @@ plotMultiProb <- function(probDf,ylb="Randomization probability",pup = 0.95,pdo=
   
   plotList <- list()
   
-  plotList[[1]] <- ggplot(xs[[1]],aes(RandStudyTime/30,Mean,group=TreatmentName,color=TreatmentName)) +
+  plotList[[1]] <- ggplot(xs[[1]],aes(CohortStartTime/30,Mean,group=TreatmentName,color=TreatmentName)) +
     geom_point() +
     geom_line() +
     geom_ribbon(aes(ymin=Down,ymax=Up,fill=TreatmentName),alpha=0.5) +
