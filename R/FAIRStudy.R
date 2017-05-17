@@ -65,6 +65,7 @@ CohortCompleted<-function(Cohort,StudyObj) {
   
   ###All subjects are recruited (now assuming that this will never happen with 2nd statement) && all subjects have dropped out or have had the last samplingtime
   ###Cohort$MaxNumberOfSubjects==Cohort$NumberOfRecruitedSubjects &&
+
   if (length(Cohort$SubjectList)!=0 && all(lapply(Cohort$SubjectList,function(Subject,LastSample){
     return(Subject$Status==0 || (LastSample %in% Subject$SubjectSampleTime))
   },max(Cohort$SamplingDesign))==TRUE)) {
@@ -207,8 +208,10 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
     myDf <- getItemsFromSubjects(Cohort,
                                  scalarItems=c("StudyID","TreatmentIndex","Treatment"),
                                  longitudinalItems = c("Data","SampleAge"))
+
     
     if(is.null(myDf)) return(NULL) # No subjects in cohort
+
   } else {
     
     # Loop over the other cohorts and get the data from those of the same level
@@ -217,6 +220,7 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
                                  longitudinalItems = c("Data","SampleAge"),
                                  prevTreatment = TRUE)
     
+
     if(is.null(myDf)) return(NULL) # No subjects in cohort
    
     myCohorts <- cohorts(StudyObj)
@@ -229,8 +233,7 @@ GetCohortData<-function(Cohort,StudyObj, accumulatedData = FALSE) {
                                     longitudinalItems = c("Data","SampleAge"),prevTreatment = TRUE)
       
       myDf <- merge(myDf,newDf, all=TRUE)
-      
-     
+
     }
   }
   
@@ -577,6 +580,7 @@ GetTreatmentRandomizations<-function(Num,Cohort,StudyObj) { #Simple uniform rand
     lowprob<-0
     highprob<-0
     if (any(is.nan(Cohort$RandomizationProbabilities))) {
+
       print(paste0("Cohort ",Cohort$Name))
       print(Cohort$RandomizationProbabilities)
     }
@@ -1039,6 +1043,7 @@ MoveCompletedSubjects<-function(StudyObj) {
           StudyObj$CohortList[[i]]$ChildCohort<-length(StudyObj$CohortList)+length(NewChildCohortList)+1 #Add reference to the new cohort as a child cohort
           NewChildCohort$ParentCohort<-i #Add a reference to old Cohort as a parent cohort
           NewChildCohort$ProbabilityCohort<-NewCohortLinkIndex #The cohort where to update the probabilities from
+
           NewChildCohortList[[length(NewChildCohortList)+1]]<-NewChildCohort
         } else {
           # StudyObj$CohortList[[Cohort$ChildCohort]]<-MoveSubjects(Cohort,StudyObj$CohortList[[Cohort$ChildCohort]],StudyObj)          
@@ -1276,6 +1281,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
 #' \dontrun{
 #' probData <- getProbData(StudyObj)
 #' }
+
 getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",...) {
   
   allData <- getAllSubjectData(StudyObj)
@@ -1292,6 +1298,7 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
   treatnames        <- data.frame(myCohorts %listmap% "Treatments")
   names(treatnames) <- cohrtNams
   
+
   probs      <- probs      %>%   gather(key="CohortName",value="Prob") 
   treatnames <- treatnames %>%   gather(key="CohortName",value="TreatmentName") 
   
@@ -1318,14 +1325,17 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
 #' \dontrun{
 #' plotProbs(StudyObj)
 #' }
+
 plotProbs <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL,...) {
   
   if(is.null(cohortAgeNames)) stop("Need to specify the cohortAgeNames.")
   probData <- getProbData(StudyObj,strProb=strProb,cohortAgeNames=cohortAgeNames)
+
   xs <- split(probData,f = probData$CohortAge)
   
   plotList <- list()
   
+
   plotList[[1]] <- ggplot(xs[[1]],aes(CohortStartTime/30,Prob,group=TreatmentName,color=TreatmentName)) +
     geom_point() +
     geom_line() +
@@ -1400,16 +1410,18 @@ probTemperation <- function(probs) {
 #'
 #' myMultStud <- runMultiSim(StudyOnjIni,iter=10,ncores=2)
 #' }
+
 runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL,clean=TRUE) {
   
   if(extractProbs & is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
-  
+
   ## Start the parallell engine if ncores > 1
   if(ncores>1) {registerDoParallel(cores=ncores)}
   
   ## Run the simulations
   myRes <- foreach(i=1:iter) %dopar% AdaptiveStudy(StudyObjIni)
   
+
   cleanFun <- function(myList) {
     myList$dfSubjPool <- NULL
     myList$dfFFEMPool <- NULL
@@ -1425,6 +1437,7 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="U
   } else {
     
     if(clean) myRes <- lapply(myRes,cleanFun)
+
     retList <- list(studList = myRes)
   }
   
@@ -1447,14 +1460,17 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="U
 #' \dontrun{
 #' getMultiProbList(multiStudObj,ncores=2,strProb="UnWeightedRandomizationProbabilities") 
 #' }
+
 getMultiProbList <- function(multiStudObj,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL) {
   
   if(is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
+
   
   ## Start the parallell engine if ncores > 1
   if(ncores>1) {registerDoParallel(cores=ncores)}
   
   ## get a list of all probability data
+
   probList <- foreach(i=1:length(multiStudObj)) %dopar% getProbData(multiStudObj[[i]],cohortAgeNames=cohortAgeNames,strProb=strProb)
   
   ## Create one data frame of all the probability data frames
@@ -1491,7 +1507,9 @@ plotMultiProb <- function(probDf,ylb="Randomization probability",pup = 0.95,pdo=
   
   ## Compute the plot data
   sumProbData <- probDf %>% 
+
     group_by(CohortAge,TreatmentName,CohortStartTime) %>% 
+
     summarise(Mean=mean(Prob),Up=up95(Prob),Down=do05(Prob)) 
   
   ## To get legends for each age cohort we need to create separate graphs for the. We'll split the data and create the graphs and then print them 

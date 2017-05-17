@@ -10,6 +10,7 @@
 #' \dontrun{
 #' plotHAZ(StudyObj)
 #' }
+
 plotHAZ <- function(StudyObj,data=NULL) {
   
   if(is.null(data)) {

@@ -14,7 +14,9 @@
 #' \dontrun{
 #' plotStudyCohorts(StudyObj)
 #' }
+
 plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,plotFutilityTimes=FALSE,plotFinalAnalysis=FALSE,wrapVariable=NULL,shiftWithinLevel=NULL,includeCohortStopTime=TRUE) {
+
   
   if(class(StudyObj) != "study") stop("studyObj needs to be a study object")
   cohortdetails<-getCohortDetails(StudyObj)
@@ -27,12 +29,12 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,plotF
   
   
   if (!is.null(shiftWithinLevel)) {
-    for (i in 1:max(cohortdetails$Level)) {
-      if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
-        cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
-        cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
-      }
+   for (i in 1:max(cohortdetails$Level)) {
+    if (nrow(cohortdetails[cohortdetails$Level==i,])>0) {
+      cohortdetails$ymin[cohortdetails$Level==i]<-cohortdetails$ymin[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
+      cohortdetails$ymax[cohortdetails$Level==i]<-cohortdetails$ymax[cohortdetails$Level==i]+(0:(nrow(cohortdetails[cohortdetails$Level==i,])-1))*shiftWithinLevel
     }
+   }
   }
   
   p <- ggplot(data=cohortdetails)
@@ -50,6 +52,7 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,plotF
   p <- p + scale_x_continuous(breaks = seq(0,48,by=6),limits= c(0, max((cohortdetails$CohortStartTime+cohortdetails$CohortDuration)/30)))
   
   if(plotAnaTimes) {
+
     
     anaTime        <- sapply(cohorts(StudyObj), `[[`, "AnalysisTime",simplify=FALSE)
     
@@ -85,11 +88,11 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,plotF
     if(plotFutilityTimes) yshift = 0.25
     anaTime        <- left_join(anaTime,cohortdetails,by="Name") %>% mutate(midTime = (ymin + ymax)/2+yshift)
     
-    
     p <- p + geom_point(data=anaTime,aes(AnalysisTimes/30,midTime),shape=19,size=4)
     p <- p + geom_point(data=anaTime,aes(AnalysisTimes/30,midTime,color=Cohort),shape=17,size=2)
   }
   
+
   ## Plot the futility time
   if(plotFutilityTimes) {
     futilityTime <- data.frame(futTime = StudyObj$FutilityList %listmap% "StudyTime",
@@ -120,3 +123,4 @@ plotStudyCohorts <- function(StudyObj,cohortlength=6*30,plotAnaTimes=FALSE,plotF
   
   return(p)
 }
+

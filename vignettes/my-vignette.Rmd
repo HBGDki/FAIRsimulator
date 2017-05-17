@@ -1,0 +1,92 @@
+---
+title: "FAIRsimulator"
+author: "Niclas Jonsson and Joakim Nyberg"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  \VignetteIndexEntry{FAIRsimulator}
+  %\VignetteEngine{knitr::rmarkdown}
+  \VignetteEncoding{UTF-8}
+---
+
+```{r,message=FALSE, warning=FALSE}
+library(FAIRsimulator)
+```
+
+
+## Run a simulation
+
+The following study will be simulated:
+
+Three cohorts of children. The first recruited at age 0, the second at age 6 month and the third at age 12 month. 
+There are 4 treatments in each age interval 0-6, 6-12 and 12-18 months. At age 6 and 12 months, the children are randomized to new treatments. The initial randomization probabilities are
+0.25, 0.25, 0.25 and 0.25. The first treatment, SoC, will always have a probability of 0.25 while the other three treatments in each age interval will be updated based on the posterior
+probability of being the best treatment, as estimated based on the previous cohort in the same interval.
+
+First we initialise the study:
+
+```{r}
+
+## Set the recrutment rate to something really fast
+RecruitmentRatefunction<-function(StudyObj,Cohort) {
+    return(5000) #Instantaneous randomization
+}
+StudyObj <- createStudy(RecruitmentFunction = RecruitmentRatefunction)
+```
+
+Then execute it:
+```{r}
+StudyObj <- AdaptiveStudy(StudyObj)
+```
+
+## Results
+
+### Visualise the design
+
+```{r,fig.width=6}
+
+plotStudyCohorts(StudyObj)
+
+```
+
+## Visualise the number of subjects in each cohort over time.
+
+The number of subjects in each cohort is the result of recruitment rate, dropout and completion (i.e. being moved to the next cycle).
+
+```{r,fig.width=6}
+plotActiveSubjects(StudyObj)
+```
+
+### Visualise the simulated HAZ data
+
+```{r,fig.width=6}
+plotHAZ(StudyObj)
+```
+
+### Visualise the treatment effects
+
+```{r,fig.width=8,fig.height=8}
+plotHAZTreatmentEff(StudyObj)
+```
+
+### List the randomization probabilities
+
+Each cohort has a set of randomization probabilities. When subjects move to later cycles, they get assigned to new treatments according to probabilities that have been
+updated based on the previous cohort in the same age range. The randomization probabilities can be listed:
+
+```{r}
+kable(StudyObj$CohortList %listmap% "RandomizationProbabilities",digits = 2)
+```
+
+
+### List the updated randomization probabilities
+
+Once a study is finished, each cohort have updated randomization probabilities. These probabilities are available even if they were never used to inform
+the randomization of treatments in other cohorts. For example Cohort 1 in Cycle 3 will not inform the randomization in any other cohorts, since there are no 
+cohorts following it.
+
+```{r}
+kable(StudyObj$CohortList %listmap% "UpdateProbabilities",digits=2)
+```
+
+
