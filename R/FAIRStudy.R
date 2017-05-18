@@ -1282,7 +1282,7 @@ getCohortAgeRange <- function(StudyObj,cohortAgeNames = c("0-6 months","6-12 mon
 #' probData <- getProbData(StudyObj)
 #' }
 
-getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",...) {
+getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",iter=NULL, ...) {
   
   allData <- getAllSubjectData(StudyObj)
   
@@ -1298,7 +1298,7 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
   treatnames        <- data.frame(myCohorts %listmap% "Treatments")
   names(treatnames) <- cohrtNams
   
-
+  
   probs      <- probs      %>%   gather(key="CohortName",value="Prob") 
   treatnames <- treatnames %>%   gather(key="CohortName",value="TreatmentName") 
   
@@ -1307,6 +1307,8 @@ getProbData <- function(StudyObj,strProb="UnWeightedRandomizationProbabilities",
   randProbs <- allData %>% distinct(CohortAge,CohortName,.keep_all=TRUE) %>% dplyr::select(CohortAge,CohortName,CohortStartTime) %>% left_join(probs,.,by="CohortName")
   
   randProbs$TreatmentName <-factor(randProbs$TreatmentName,levels=unique(unlist(StudyObj$StudyDesignSettings$Treatments)))
+  
+  if(!is.null(iter))  randProbs$Iter <- iter
   
   return(randProbs)
 }
@@ -1480,23 +1482,24 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="U
 getMultiProbList <- function(multiStudObj,ncores=1,strProb="UnWeightedRandomizationProbabilities",cohortAgeNames=NULL) {
   
   if(is.null(cohortAgeNames)) stop("Need to specify cohortAgeNames.")
-
+  
   
   ## Start the parallell engine if ncores > 1
   if(ncores>1) {registerDoParallel(cores=ncores)}
   
   ## get a list of all probability data
-
-  probList <- foreach(i=1:length(multiStudObj)) %dopar% getProbData(multiStudObj[[i]],cohortAgeNames=cohortAgeNames,strProb=strProb)
+  
+  probList <- foreach(i=1:length(multiStudObj)) %dopar% getProbData(multiStudObj[[i]],cohortAgeNames=cohortAgeNames,strProb=strProb,iter=i)
   
   ## Create one data frame of all the probability data frames
   probDf <- bind_rows(probList)
   
   ## Add an iteration variable (Iter)
-  probDf$Iter <- rep(1:length(multiStudObj),each=nrow(probDf)/length(multiStudObj))
+  #probDf$Iter <- rep(1:length(multiStudObj),each=nrow(probDf)/length(multiStudObj))
   
   return(probDf)  
 }
+
 
 #' plotMultiProb
 #' 
