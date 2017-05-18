@@ -8,6 +8,11 @@
 ### Cell 3: SoC - Food 7.5 - Iron + Vit A + Zinc - Psychocosocial care - Antibiotics, Effect size: 0.304  
 ### Cell 4: SoC - Food 7.5 - Iron + Vit A + Zinc - Antibiotics, WASH, Effect size: 0.250  
 
+
+
+
+
+
 library(FAIRsimulator)
 
 set.seed(324124)
