@@ -1425,6 +1425,22 @@ runMultiSim <- function(StudyOnjIni,extractProbs=TRUE,iter=1,ncores=1,strProb="U
   cleanFun <- function(myList) {
     myList$dfSubjPool <- NULL
     myList$dfFFEMPool <- NULL
+    if (!is.null(myList))  {
+      for (i in 1:length(myList$CohortList)) {
+        if (!is.null(myList$CohortList[[i]]$SubjectList)) {
+          for (j in 1:length(myList$CohortList[[i]]$SubjectList)) {
+            myList$CohortList[[i]]$SubjectList[[j]]$FREMCoeffs<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$Covariates<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$IndSamples<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$SampleAge<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$Data<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$StudySampleTime<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$CohortSampleTime<-NULL
+            myList$CohortList[[i]]$SubjectList[[j]]$SubjectSampleTime<-NULL
+          }
+        }
+      }
+    }
     return(myList)
   }
   
