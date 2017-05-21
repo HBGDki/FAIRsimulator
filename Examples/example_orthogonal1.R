@@ -8,7 +8,23 @@
 ### Cell 3: SoC - Food 7.5 - Iron + Vit A + Zinc - Psychocosocial care - Antibiotics, Effect size: 0.304  
 ### Cell 4: SoC - Food 7.5 - Iron + Vit A + Zinc - Antibiotics, WASH, Effect size: 0.250  
 
-
+if (!is.null(StudyObj))  {
+  for (i in 1:length(StudyObj$CohortList)) {
+    if (!is.null(StudyObj$CohortList[[i]]$SubjectList)) {
+      for (j in 1:length(StudyObj$CohortList[[i]]$SubjectList)) {
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$FREMCoeffs<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$Covariates<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$IndSamples<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$SampleAge<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$Data<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$StudySampleTime<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$CohortSampleTime<-NULL
+        StudyObj$CohortList[[i]]$SubjectList[[j]]$SubjectSampleTime<-NULL
+        #StudyObj$CohortList[[i]]$SubjectList[[j]]$Treatment<-NULL
+      }
+    }
+  }
+}
 
 
 
